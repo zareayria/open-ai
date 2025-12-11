@@ -84,13 +84,8 @@ function invoice_form_shortcode() {
                 </div>
 
                 <div class="form-section">
-                    <h3>اقلام پیش فاکتور</h3>
-                    <div class="tabs">
-                        <button type="button" class="tab-link active" data-tab="manual-entry">نوشتن دستی اقلام</button>
-                        <button type="button" class="tab-link" data-tab="file-upload">آپلود فایل</button>
-                    </div>
-
-                    <div id="manual-entry" class="tab-content active">
+                    <h3>افزودن محصول</h3>
+                    <div id="manual-entry">
                         <?php if (class_exists('WooCommerce')) : ?>
                         <div class="form-field">
                             <label for="product-search">جستجوی محصول</label>
@@ -102,11 +97,6 @@ function invoice_form_shortcode() {
                             <!-- Items will be added here via JS -->
                         </div>
                         <button type="button" id="add-invoice-item" class="add-item-btn">+ افزودن محصول</button>
-                    </div>
-
-                    <div id="file-upload" class="tab-content">
-                        <p>می‌توانید لیست محصولات خود را در قالب فایل‌های مجاز بارگذاری کنید.</p>
-                        <input type="file" name="invoice_file" id="invoice_file">
                     </div>
                 </div>
             </div>
@@ -276,6 +266,19 @@ function handle_invoice_form_submission() {
 
         if (isset($_FILES[$file_input_name]) && $_FILES[$file_input_name]['error'] == 0) {
             $uploaded_file = $_FILES[$file_input_name];
+
+            // ** Image Dimension Validation **
+            $image_size = getimagesize($uploaded_file['tmp_name']);
+            if ($image_size !== false) { // It's an image
+                $width = $image_size[0];
+                $height = $image_size[1];
+
+                if ($width != 250 || $height != 250) {
+                     $wpdb->delete($requests_table_name, ['id' => $request_id]); // Clean up
+                     wp_die('ابعاد تصویر باید دقیقاً 250x250 پیکسل باشد. لطفاً تصویر خود را ویرایش کرده و مجدداً آپلود کنید.');
+                }
+            }
+            // ** End Validation **
 
             $movefile = wp_handle_upload($uploaded_file, $upload_overrides);
 
@@ -533,6 +536,7 @@ function display_sellers_page() {
 }
 
 require_once plugin_dir_path(__FILE__) . 'admin/form-settings-page.php';
+require_once plugin_dir_path(__FILE__) . 'includes/export-csv.php';
 
 function load_media_files() {
     wp_enqueue_media();
@@ -547,7 +551,29 @@ function display_invoice_requests_page() {
     $data_table = $wpdb->prefix . 'invoice_request_data';
 
     // In a real-world scenario with many requests, you'd want pagination.
-    $requests = $wpdb->get_results( "
+    $current_seller = isset($_GET['seller_id']) ? absint($_GET['seller_id']) : '';
+    $current_customer = isset($_GET['customer_name']) ? sanitize_text_field($_GET['customer_name']) : '';
+
+    $where_clauses = [];
+    $params = [];
+
+    if (!empty($current_seller)) {
+        $where_clauses[] = "r.seller_id = %d";
+        $params[] = $current_seller;
+    }
+
+    if (!empty($current_customer)) {
+        // This subquery finds request_ids that have a matching customer_name
+        $where_clauses[] = "r.id IN (SELECT request_id FROM $data_table WHERE field_name = 'customer_name' AND field_value LIKE %s)";
+        $params[] = '%' . $wpdb->esc_like($current_customer) . '%';
+    }
+
+    $where_sql = '';
+    if (!empty($where_clauses)) {
+        $where_sql = "WHERE " . implode(' AND ', $where_clauses);
+    }
+
+    $query = "
         SELECT
             r.id,
             r.created_at,
@@ -555,11 +581,63 @@ function display_invoice_requests_page() {
             (SELECT d.field_value FROM $data_table d WHERE d.request_id = r.id AND d.field_name = 'customer_name' LIMIT 1) as customer_name
         FROM $requests_table r
         LEFT JOIN $sellers_table s ON r.seller_id = s.id
+        $where_sql
         ORDER BY r.created_at DESC
-    " );
+    ";
+
+    if (!empty($params)) {
+        $requests = $wpdb->get_results($wpdb->prepare($query, $params));
+    } else {
+        $requests = $wpdb->get_results($query);
+    }
+
+    // Get counts for display
+    $customer_counts = $wpdb->get_results("SELECT field_value, COUNT(*) as count FROM $data_table WHERE field_name = 'customer_name' GROUP BY field_value ORDER BY count DESC");
+    $seller_counts = $wpdb->get_results("SELECT s.name, COUNT(r.id) as count FROM $requests_table r JOIN $sellers_table s ON r.seller_id = s.id GROUP BY r.seller_id ORDER BY count DESC");
+
+
+    $sellers = $wpdb->get_results("SELECT id, name FROM $sellers_table ORDER BY name ASC");
     ?>
     <div class="wrap">
         <h1>درخواست‌های پیش‌فاکتور</h1>
+
+        <div id="request-stats" style="display:flex; gap: 40px; margin-bottom: 20px;">
+            <div>
+                <h2>تعداد پیش‌فاکتور بر اساس مشتری</h2>
+                <ul>
+                    <?php foreach($customer_counts as $customer) : ?>
+                        <li><?php echo esc_html($customer->field_value); ?>: <?php echo esc_html($customer->count); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <div>
+                <h2>تعداد پیش‌فاکتور بر اساس فروشنده</h2>
+                <ul>
+                     <?php foreach($seller_counts as $seller) : ?>
+                        <li><?php echo esc_html($seller->name); ?>: <?php echo esc_html($seller->count); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Filter Form -->
+        <form method="get">
+            <input type="hidden" name="page" value="invoice-requests">
+            <select name="seller_id">
+                <option value="">همه فروشندگان</option>
+                <?php foreach ($sellers as $seller): ?>
+                    <option value="<?php echo esc_attr($seller->id); ?>" <?php selected($current_seller, $seller->id); ?>>
+                        <?php echo esc_html($seller->name); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <input type="text" name="customer_name" placeholder="جستجوی نام مشتری..." value="<?php echo esc_attr($current_customer); ?>">
+            <input type="submit" class="button" value="فیلتر">
+        </form>
+
+        <!-- Export Button -->
+        <a href="<?php echo add_query_arg(['action' => 'export_requests', 'seller_id' => $current_seller, 'customer_name' => $current_customer]); ?>" class="button" style="margin-top: 10px;">خروجی اکسل (CSV)</a>
+
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
@@ -609,7 +687,7 @@ function display_invoice_request_details_page() {
     $fields_table = $wpdb->prefix . 'invoice_form_fields';
 
     $request = $wpdb->get_row( $wpdb->prepare( "
-        SELECT r.*, s.name as seller_name, s.details as seller_details
+        SELECT r.*, s.name as seller_name
         FROM $requests_table r
         LEFT JOIN $sellers_table s ON r.seller_id = s.id
         WHERE r.id = %d

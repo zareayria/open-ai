@@ -188,6 +188,13 @@
     border-radius: 5px;
     box-sizing: border-box;
 }
+
+.invoice-item textarea {
+    height: 42px; /* Match input height */
+    resize: vertical;
+    min-height: 42px;
+}
+
 .remove-item-btn {
     background: none;
     border: none;

@@ -22,9 +22,9 @@ jQuery(document).ready(function($) {
         const wrapper = $('#invoice-items-wrapper');
         const newItemHTML = `
             <div class="invoice-item">
-                <input type="text" name="invoice_items[${itemIndex}][title]" placeholder="عنوان محصول" value="${title}" required>
+                <input type="text" name="invoice_items[${itemIndex}][title]" placeholder="عنوان محصول را بنویسید" value="${title}" required>
                 <input type="number" name="invoice_items[${itemIndex}][quantity]" min="1" value="1" placeholder="تعداد" required>
-                <input type="text" name="invoice_items[${itemIndex}][description]" placeholder="توضیحات (اختیاری)" value="${description}">
+                <textarea name="invoice_items[${itemIndex}][description]" placeholder="توضیحات (اختیاری)">${description}</textarea>
                 <button type="button" class="remove-item-btn" title="حذف محصول"><span>&times;</span> حذف</button>
             </div>
         `;

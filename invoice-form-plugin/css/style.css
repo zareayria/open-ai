@@ -41,6 +41,7 @@
     margin-bottom: 10px;
     font-size: 1.5em;
     color: #333;
+    text-align: center;
 }
 
 .section-description {
@@ -48,6 +49,7 @@
     margin-bottom: 25px;
     color: #777;
     font-size: 0.95em;
+    text-align: center;
 }
 
 /* Form Grid Layout */
@@ -62,6 +64,10 @@
 }
 
 /* Form Fields */
+.form-field {
+    position: relative;
+}
+
 .form-field label {
     display: block;
     margin-bottom: 8px;
@@ -90,6 +96,28 @@
 .form-field textarea {
     height: 100px;
     resize: vertical;
+}
+
+/* Add search icon to the search input */
+#product-search {
+    padding-right: 35px; /* Make space for the icon */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: calc(100% - 10px) center;
+}
+
+/* Style for placeholders */
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+  color: #b0b0b0 !important; /* Lighter color */
+  opacity: 1; /* Firefox */
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+  color: #b0b0b0 !important;
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+  color: #b0b0b0 !important;
 }
 
 /* Tabs */
@@ -152,7 +180,8 @@
     gap: 10px;
     align-items: center;
 }
-.invoice-item input {
+.invoice-item input,
+.invoice-item textarea {
      width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
@@ -233,7 +262,7 @@ input[type="file"] {
 }
 
 .submit-btn {
-    background-color: #0073aa;
+    background-color: #e74c3c; /* Red color */
     color: #fff;
     border: none;
     padding: 15px;

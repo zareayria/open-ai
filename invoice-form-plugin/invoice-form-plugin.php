@@ -69,7 +69,7 @@ function invoice_form_shortcode() {
                         <?php if (class_exists('WooCommerce')) : ?>
                         <div class="form-field">
                             <label for="product-search">جستجوی محصول</label>
-                            <input type="text" id="product-search" placeholder="نام محصول را تایپ کنید...">
+                            <input type="text" id="product-search" placeholder="جست جوی محصول مورد نظر درسایت">
                             <div id="product-search-results"></div>
                         </div>
                         <?php endif; ?>

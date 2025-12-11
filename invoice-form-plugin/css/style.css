@@ -6,7 +6,7 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     padding: 30px;
-    font-family: 'Vazirmatn', sans-serif; /* Assuming a Persian font */
+    /* font-family rule removed to inherit from theme */
     direction: rtl;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
@@ -134,6 +134,11 @@
     display: block;
 }
 
+/* Add margin to the product search field */
+.tab-content .form-field {
+    margin-bottom: 25px;
+}
+
 /* Invoice Items Table (inside manual entry) */
 #invoice-items-wrapper {
     display: flex;
@@ -142,7 +147,8 @@
 }
 .invoice-item {
     display: grid;
-    grid-template-columns: 3fr 1fr 1fr 0.5fr;
+    /* Adjust grid to make description wider */
+    grid-template-columns: 2.5fr 1fr 3fr 0.5fr;
     gap: 10px;
     align-items: center;
 }
@@ -154,16 +160,22 @@
     box-sizing: border-box;
 }
 .remove-item-btn {
-    background: #e74c3c;
-    color: white;
+    background: none;
     border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 1.2em;
+    color: #e74c3c;
     cursor: pointer;
-    line-height: 30px;
+    font-weight: bold;
+    font-size: 1em;
     text-align: center;
+    padding: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.remove-item-btn span {
+    font-size: 1.5em;
+    line-height: 1;
 }
 
 .add-item-btn {
@@ -231,6 +243,7 @@ input[type="file"] {
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s;
+    white-space: nowrap; /* Prevent text from wrapping */
 }
 
 .submit-btn:hover {

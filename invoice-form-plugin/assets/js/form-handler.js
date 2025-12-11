@@ -25,7 +25,7 @@ jQuery(document).ready(function($) {
                 <input type="text" name="invoice_items[${itemIndex}][title]" placeholder="عنوان محصول" value="${title}" required>
                 <input type="number" name="invoice_items[${itemIndex}][quantity]" min="1" value="1" placeholder="تعداد" required>
                 <input type="text" name="invoice_items[${itemIndex}][description]" placeholder="توضیحات (اختیاری)" value="${description}">
-                <button type="button" class="remove-item-btn" title="حذف محصول">&times;</button>
+                <button type="button" class="remove-item-btn" title="حذف محصول"><span>&times;</span> حذف</button>
             </div>
         `;
         wrapper.append(newItemHTML);

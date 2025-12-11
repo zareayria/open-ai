@@ -3,7 +3,7 @@
  * Plugin Name: Invoice Form Plugin
  * Description: A plugin to create a proforma invoice request form.
  * Version: 1.0
- * Author: Jules
+ * Author: محمد زارع
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

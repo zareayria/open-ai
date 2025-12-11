@@ -313,12 +313,14 @@ input[type="file"] {
 
 /* Responsive Styles */
 @media (max-width: 992px) {
+    /* Force columns to stack on smaller screens */
     #invoice-form {
-        flex-direction: column;
+        flex-wrap: wrap;
     }
-
+    .form-main-content,
     .form-sidebar {
-        flex: auto; /* Reset flex property */
+        width: 100%;
+        flex: 1 1 100%; /* Allow items to grow and shrink, with a 100% basis */
     }
 
     .summary-box {

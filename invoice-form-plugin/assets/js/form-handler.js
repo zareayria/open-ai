@@ -1,3 +1,13 @@
+// Debounce function to limit the rate at which a function gets called.
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
 jQuery(document).ready(function($) {
     let itemIndex = 0;
 
@@ -40,8 +50,9 @@ jQuery(document).ready(function($) {
     const searchInput = $('#product-search');
     const searchResults = $('#product-search-results');
 
-    searchInput.on('keyup', function() {
-        const searchTerm = $(this).val();
+    // Debounced search function
+    const debouncedSearch = debounce(function() {
+        const searchTerm = searchInput.val();
 
         if (searchTerm.length < 3) {
             searchResults.empty();
@@ -70,7 +81,9 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300); // 300ms delay
+
+    searchInput.on('keyup', debouncedSearch);
 
     // Handle product selection from search results
     searchResults.on('click', 'a', function(e) {

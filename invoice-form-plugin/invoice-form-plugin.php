@@ -88,8 +88,11 @@ function invoice_form_shortcode() {
                 </div>
 
                 <div class="form-section">
-                    <h3>افزودن محصول</h3>
-                    <div id="manual-entry">
+                    <h3>اقلام پیش فاکتور</h3>
+                    <div class="tabs">
+                        <button type="button" class="tab-link active" data-tab="manual-entry">نوشتن دستی اقلام</button>
+                    </div>
+                    <div id="manual-entry" class="tab-content active">
                         <?php if (class_exists('WooCommerce')) : ?>
                         <div class="form-field">
                             <label for="product-search">جستجوی محصول</label>

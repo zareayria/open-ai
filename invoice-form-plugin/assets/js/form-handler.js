@@ -19,7 +19,7 @@ jQuery(document).ready(function($) {
                 <input type="text" name="invoice_items[${itemIndex}][title]" placeholder="عنوان محصول" required>
                 <input type="number" name="invoice_items[${itemIndex}][quantity]" placeholder="تعداد" min="1" value="1" required>
                 <textarea name="invoice_items[${itemIndex}][description]" placeholder="توضیحات (اختیاری)"></textarea>
-                <button type="button" class="remove-invoice-item">-</button>
+                <button type="button" class="remove-invoice-item">حذف</button>
             </div>`;
         $('#invoice-items-wrapper').append(newItemRow);
     });
@@ -76,7 +76,7 @@ jQuery(document).ready(function($) {
                     <input type="text" name="invoice_items[${itemIndex}][title]" value="${productTitle}" required>
                     <input type="number" name="invoice_items[${itemIndex}][quantity]" placeholder="تعداد" min="1" value="1" required>
                     <textarea name="invoice_items[${itemIndex}][description]" placeholder="توضیحات (اختیاری)"></textarea>
-                    <button type="button" class="remove-invoice-item">-</button>
+                    <button type="button" class="remove-invoice-item">حذف</button>
                 </div>`;
             $('#invoice-items-wrapper').append(newItemRow);
             $('#product-search').val('');

@@ -13,62 +13,88 @@ if ( ! defined( 'ABSPATH' ) ) {
 function invoice_form_shortcode() {
     ob_start();
 
-    if ( class_exists( 'WooCommerce' ) ) {
-        // Enqueue scripts and localize data
-        wp_enqueue_script('invoice-form-js', plugin_dir_url( __FILE__ ) . 'assets/js/form-handler.js', array('jquery'), '1.0', true);
-        wp_localize_script('invoice-form-js', 'invoice_form_ajax', array(
-            'ajax_url' => admin_url( 'admin-ajax.php' ),
-            'nonce'    => wp_create_nonce( 'invoice-form-nonce' )
-        ));
-    }
+    // Enqueue Styles
+    wp_enqueue_style('invoice-form-css', plugin_dir_url(__FILE__) . 'css/style.css', array(), '1.1');
+
+    // Enqueue scripts and localize data
+    wp_enqueue_script('invoice-form-js', plugin_dir_url(__FILE__) . 'assets/js/form-handler.js', array('jquery'), '1.1', true);
+    wp_localize_script('invoice-form-js', 'invoice_form_ajax', array(
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce'    => wp_create_nonce('invoice-form-nonce')
+    ));
 
     // Display success message
-    if ( isset( $_GET['invoice_submitted'] ) && $_GET['invoice_submitted'] == 'true' ) {
-        echo '<p style="color: green;">درخواست شما با موفقیت ثبت شد. با تشکر!</p>';
+    if (isset($_GET['invoice_submitted']) && $_GET['invoice_submitted'] == 'true') {
+        echo '<p class="invoice-success-message">درخواست شما با موفقیت ثبت شد. با تشکر!</p>';
     }
-
     ?>
-    <form id="invoice-form" method="post">
-        <h2>اطلاعات تماس</h2>
-        <p>
-            <label for="customer_name">نام و نام خانوادگی (اجباری)</label>
-            <input type="text" id="customer_name" name="customer_name" required>
-        </p>
-        <p>
-            <label for="customer_email">ایمیل</label>
-            <input type="email" id="customer_email" name="customer_email">
-        </p>
-        <p>
-            <label for="customer_phone">شماره همراه (اجباری)</label>
-            <input type="text" id="customer_phone" name="customer_phone" required>
-        </p>
-        <p>
-            <label for="customer_company">شرکت</label>
-            <input type="text" id="customer_company" name="customer_company">
-        </p>
-         <p>
-            <label for="customer_notes">توضیحات</label>
-            <textarea id="customer_notes" name="customer_notes"></textarea>
-        </p>
+    <div class="invoice-form-container">
+        <form id="invoice-form" method="post" enctype="multipart/form-data">
+            <div class="form-main-content">
+                <div class="form-section">
+                    <h3>اطلاعات تماس</h3>
+                    <p class="section-description">اطلاعات تماس و لیست اجناس را در فرم زیر پر کنید</p>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="customer_name">نام و نام خانوادگی (اجباری)</label>
+                            <input type="text" id="customer_name" name="customer_name" placeholder="نام شرکت خود را بنویسید..." required>
+                        </div>
+                        <div class="form-field">
+                            <label for="customer_company">شرکت</label>
+                            <input type="text" id="customer_company" name="customer_company" placeholder="نام شرکت خود را بنویسید...">
+                        </div>
+                        <div class="form-field">
+                            <label for="customer_phone">شماره همراه (اجباری)</label>
+                            <input type="text" id="customer_phone" name="customer_phone" placeholder="مثلا: ۰۹۱۲۳۴۵۶۷۸۹" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="customer_email">ایمیل</label>
+                            <input type="email" id="customer_email" name="customer_email" placeholder="ایمیل خود را بنویسید...">
+                        </div>
+                        <div class="form-field full-width">
+                            <label for="customer_notes">توضیحات</label>
+                            <textarea id="customer_notes" name="customer_notes" placeholder="توضیحات خود را بنویسید..."></textarea>
+                        </div>
+                    </div>
+                </div>
 
-        <h2>اقلام پیش فاکتور</h2>
+                <div class="form-section">
+                    <h3>اقلام پیش فاکتور</h3>
+                    <div class="tabs">
+                        <button type="button" class="tab-link active" data-tab="manual-entry">نوشتن دستی اقلام</button>
+                        <button type="button" class="tab-link" data-tab="file-upload">آپلود فایل</button>
+                    </div>
 
-        <?php if ( class_exists( 'WooCommerce' ) ) : ?>
-            <p>
-                <label for="product-search">جستجوی محصول</label>
-                <input type="text" id="product-search" placeholder="نام محصول را تایپ کنید...">
-                <div id="product-search-results"></div>
-            </p>
-        <?php endif; ?>
+                    <div id="manual-entry" class="tab-content active">
+                        <?php if (class_exists('WooCommerce')) : ?>
+                        <div class="form-field">
+                            <label for="product-search">جستجوی محصول</label>
+                            <input type="text" id="product-search" placeholder="نام محصول را تایپ کنید...">
+                            <div id="product-search-results"></div>
+                        </div>
+                        <?php endif; ?>
+                        <div id="invoice-items-wrapper">
+                            <!-- Items will be added here via JS -->
+                        </div>
+                        <button type="button" id="add-invoice-item" class="add-item-btn">+ افزودن محصول</button>
+                    </div>
 
-        <div id="invoice-items-wrapper">
-        </div>
-        <button type="button" id="add-invoice-item">افزودن محصول به صورت دستی</button>
+                    <div id="file-upload" class="tab-content">
+                        <p>می‌توانید لیست محصولات خود را در قالب فایل‌های مجاز بارگذاری کنید.</p>
+                        <input type="file" name="invoice_file" id="invoice_file">
+                    </div>
+                </div>
+            </div>
 
-        <p>
-            <input type="submit" name="submit_invoice_request" value="ثبت درخواست پیش فاکتور">
-        </p>
-    </form>
+            <div class="form-sidebar">
+                <div class="summary-box">
+                    <h4>درخواست پیش فاکتور</h4>
+                    <p class="summary-description">پیش فاکتور از طریق واتساپ ارسال خواهد شد؛ در صورت نبود دسترسی، از سایر راه‌های ارتباطی فعال شما ارسال می‌گردد.</p>
+                    <button type="submit" name="submit_invoice_request" class="submit-btn">ثبت درخواست پیش فاکتور</button>
+                </div>
+            </div>
+        </form>
+    </div>
     <?php
     return ob_get_clean();
 }
@@ -117,6 +143,7 @@ function create_invoice_tables() {
         customer_phone tinytext NOT NULL,
         customer_company tinytext,
         customer_notes text,
+        file_path varchar(255) DEFAULT '' NOT NULL,
         created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
         PRIMARY KEY  (id)
     ) $charset_collate;
@@ -142,6 +169,27 @@ function handle_invoice_form_submission() {
         $requests_table_name = $wpdb->prefix . 'invoice_requests';
         $items_table_name = $wpdb->prefix . 'invoice_request_items';
 
+        // Handle file upload first
+        $uploaded_file_url = '';
+        if ( isset($_FILES['invoice_file']) && $_FILES['invoice_file']['error'] == 0 ) {
+
+            // WordPress upload overrides
+            $upload_overrides = array( 'test_form' => false );
+
+            // Get file info
+            $file_info = $_FILES['invoice_file'];
+
+            // Handle the upload using WordPress functions
+            $movefile = wp_handle_upload( $file_info, $upload_overrides );
+
+            if ( $movefile && !isset( $movefile['error'] ) ) {
+                $uploaded_file_url = $movefile['url'];
+            } else {
+                // You can handle the error here if you want
+                 error_log('File Upload Error: ' . $movefile['error']);
+            }
+        }
+
         // Sanitize and prepare customer data
         $customer_name = sanitize_text_field( $_POST['customer_name'] );
         $customer_email = sanitize_email( $_POST['customer_email'] );
@@ -158,12 +206,13 @@ function handle_invoice_form_submission() {
                 'customer_phone'   => $customer_phone,
                 'customer_company' => $customer_company,
                 'customer_notes'   => $customer_notes,
+                'file_path'        => $uploaded_file_url,
             )
         );
 
         $request_id = $wpdb->insert_id;
 
-        // Insert invoice items
+        // Insert invoice items from manual entry
         if ( $request_id > 0 && isset( $_POST['invoice_items'] ) && is_array( $_POST['invoice_items'] ) ) {
             foreach ( $_POST['invoice_items'] as $item ) {
                 if ( ! empty( $item['title'] ) ) {
@@ -300,6 +349,12 @@ function display_invoice_request_details_page() {
                 <th scope="row">تاریخ ثبت</th>
                 <td><?php echo esc_html( $request->created_at ); ?></td>
             </tr>
+            <?php if ( ! empty( $request->file_path ) ) : ?>
+                <tr>
+                    <th scope="row">فایل آپلود شده</th>
+                    <td><a href="<?php echo esc_url( $request->file_path ); ?>" target="_blank">مشاهده و دانلود فایل</a></td>
+                </tr>
+            <?php endif; ?>
         </table>
 
         <h2>اقلام درخواستی</h2>

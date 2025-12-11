@@ -310,3 +310,49 @@ input[type="file"] {
 .search-result-item:hover {
     background: #f0f0f0;
 }
+
+/* Responsive Styles */
+@media (max-width: 992px) {
+    #invoice-form {
+        flex-direction: column;
+    }
+
+    .form-sidebar {
+        flex: auto; /* Reset flex property */
+    }
+
+    .summary-box {
+        position: static; /* Remove sticky positioning on smaller screens */
+    }
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr; /* Stack grid items */
+    }
+
+    .invoice-item {
+        grid-template-columns: 1fr; /* Stack item fields */
+        gap: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .invoice-item:last-child {
+        border-bottom: none;
+    }
+
+    .remove-item-btn {
+        grid-row: 4; /* Ensure button is last */
+        justify-self: center; /* Center the remove button */
+        width: 50%;
+        background-color: #fbeae8;
+        border: 1px solid #e74c3c;
+        border-radius: 5px;
+        padding: 8px;
+    }
+
+    .submit-btn {
+        white-space: normal; /* Allow text to wrap on small screens */
+    }
+}

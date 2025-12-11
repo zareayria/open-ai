@@ -198,7 +198,7 @@ function handle_invoice_form_submission() {
         $customer_notes = sanitize_textarea_field( $_POST['customer_notes'] );
 
         // Insert the main request
-        $wpdb->insert(
+        $insert_result = $wpdb->insert(
             $requests_table_name,
             array(
                 'customer_name'    => $customer_name,

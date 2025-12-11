@@ -34,7 +34,7 @@ function invoice_form_shortcode() {
     }
     ?>
     <div class="invoice-form-container">
-        <form id="invoice-form" method="post" enctype="multipart/form-data">
+        <form id="invoice-form" method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url('admin-post.php') ); ?>">
              <input type="hidden" name="action" value="handle_invoice_form_submission">
              <?php wp_nonce_field( 'submit_invoice_form_nonce' ); ?>
 
@@ -67,7 +67,13 @@ function invoice_form_shortcode() {
 
                             if ($field->field_type === 'textarea') {
                                 echo '<textarea id="' . $field_id . '" name="' . $field_name . '" placeholder="' . esc_attr($field->placeholder) . '" ' . $required_attr . '></textarea>';
-                            } else {
+                            } else if ($field->field_type === 'file') {
+                                // For file inputs, the name attribute needs to be unique and not in an array format for $_FILES to work correctly.
+                                $file_field_name = 'form_file_' . esc_attr($field->field_name);
+                                echo '<input type="file" id="' . $field_id . '" name="' . $file_field_name . '" ' . $required_attr . '>';
+                                echo '<span class="description">ابعاد تصویر باید ۲۵۰×۲۵۰ پیکسل باشد.</span>';
+                            }
+                            else {
                                 echo '<input type="' . esc_attr($field->field_type) . '" id="' . $field_id . '" name="' . $field_name . '" placeholder="' . esc_attr($field->placeholder) . '" ' . $required_attr . '>';
                             }
 
@@ -179,7 +185,7 @@ function create_invoice_tables() {
     CREATE TABLE $sellers_table_name (
         id mediumint(9) NOT NULL AUTO_INCREMENT,
         name tinytext NOT NULL,
-        details text,
+        mobile_number varchar(20),
         image_url varchar(255),
         PRIMARY KEY  (id)
     ) $charset_collate;
@@ -220,12 +226,13 @@ function insert_default_form_fields() {
     global $wpdb;
     $fields_table_name = $wpdb->prefix . 'invoice_form_fields';
 
+    // Clear existing default fields to ensure a clean slate, only on first activation
+    $wpdb->query("TRUNCATE TABLE $fields_table_name");
+
     $default_fields = array(
         array('field_name' => 'customer_name', 'field_label' => 'نام و نام خانوادگی', 'field_type' => 'text', 'placeholder' => 'نام خود را بنویسید...', 'is_required' => 1, 'field_order' => 1),
-        array('field_name' => 'customer_company', 'field_label' => 'شرکت', 'field_type' => 'text', 'placeholder' => 'نام شرکت خود را بنویسید...', 'is_required' => 0, 'field_order' => 2),
-        array('field_name' => 'customer_phone', 'field_label' => 'شماره همراه', 'field_type' => 'text', 'placeholder' => 'مثلا: ۰۹۱۲۳۴۵۶۷۸۹', 'is_required' => 1, 'field_order' => 3),
-        array('field_name' => 'customer_email', 'field_label' => 'ایمیل', 'field_type' => 'email', 'placeholder' => 'ایمیل خود را بنویسید...', 'is_required' => 0, 'field_order' => 4),
-        array('field_name' => 'customer_notes', 'field_label' => 'توضیحات', 'field_type' => 'textarea', 'placeholder' => 'توضیحات خود را بنویسید...', 'is_required' => 0, 'field_order' => 5),
+        array('field_name' => 'customer_phone', 'field_label' => 'شماره موبایل', 'field_type' => 'text', 'placeholder' => 'مثلا: ۰۹۱۲۳۴۵۶۷۸۹', 'is_required' => 1, 'field_order' => 2),
+        array('field_name' => 'customer_photo', 'field_label' => 'آپلود عکس', 'field_type' => 'file', 'placeholder' => '', 'is_required' => 1, 'field_order' => 3),
     );
 
     foreach ($default_fields as $field) {
@@ -243,37 +250,53 @@ function handle_invoice_form_submission() {
     $requests_table_name = $wpdb->prefix . 'invoice_requests';
     $items_table_name = $wpdb->prefix . 'invoice_request_items';
     $data_table_name = $wpdb->prefix . 'invoice_request_data';
-
-    // Handle file upload first
-    $uploaded_file_url = '';
-    if ( isset($_FILES['invoice_file']) && $_FILES['invoice_file']['error'] == 0 ) {
-        require_once( ABSPATH . 'wp-admin/includes/file.php' );
-        $upload_overrides = array( 'test_form' => false );
-        $movefile = wp_handle_upload( $_FILES['invoice_file'], $upload_overrides );
-
-        if ( $movefile && !isset( $movefile['error'] ) ) {
-            $uploaded_file_url = $movefile['url'];
-        } else {
-            error_log('File Upload Error: ' . $movefile['error']);
-        }
-    }
+    $fields_table_name = $wpdb->prefix . 'invoice_form_fields';
 
     // Sanitize and prepare data
     $seller_id = isset($_POST['seller_id']) ? absint($_POST['seller_id']) : 0;
 
-    // Insert the main request record
-    $wpdb->insert(
-        $requests_table_name,
-        array(
-            'seller_id' => $seller_id,
-            'file_path' => $uploaded_file_url,
-        )
-    );
-
+    // Create the main request record first to get an ID
+    $wpdb->insert($requests_table_name, ['seller_id' => $seller_id]);
     $request_id = $wpdb->insert_id;
 
-    // Insert dynamic form fields data
-    if ( $request_id > 0 && isset($_POST['form_fields']) && is_array($_POST['form_fields']) ) {
+    if ($request_id === 0) {
+        wp_die('خطایی در ایجاد درخواست رخ داد.');
+        return;
+    }
+
+    // --- Handle File Uploads (No Validation needed here anymore) ---
+    require_once( ABSPATH . 'wp-admin/includes/file.php' );
+    $upload_overrides = array('test_form' => false);
+
+    // Get all 'file' type fields from DB to check against $_FILES
+    $file_fields = $wpdb->get_results("SELECT field_name FROM $fields_table_name WHERE field_type = 'file'");
+
+    foreach ($file_fields as $file_field) {
+        $file_input_name = 'form_file_' . $file_field->field_name;
+
+        if (isset($_FILES[$file_input_name]) && $_FILES[$file_input_name]['error'] == 0) {
+            $uploaded_file = $_FILES[$file_input_name];
+
+            $movefile = wp_handle_upload($uploaded_file, $upload_overrides);
+
+            if ($movefile && !isset($movefile['error'])) {
+                // Save file URL to the data table
+                 $wpdb->insert(
+                    $data_table_name,
+                    array(
+                        'request_id'  => $request_id,
+                        'field_name'  => sanitize_key($file_field->field_name),
+                        'field_value' => $movefile['url'], // Store the URL
+                    )
+                );
+            } else {
+                error_log('File Upload Error: ' . $movefile['error']);
+            }
+        }
+    }
+
+    // --- Handle Standard Form Fields ---
+    if (isset($_POST['form_fields']) && is_array($_POST['form_fields'])) {
         foreach ($_POST['form_fields'] as $field_name => $field_value) {
             $wpdb->insert(
                 $data_table_name,
@@ -286,8 +309,8 @@ function handle_invoice_form_submission() {
         }
     }
 
-    // Insert invoice items from manual entry
-    if ( $request_id > 0 && isset($_POST['invoice_items']) && is_array($_POST['invoice_items']) ) {
+    // --- Handle Invoice Items (Manual Entry) ---
+    if (isset($_POST['invoice_items']) && is_array($_POST['invoice_items'])) {
         foreach ( $_POST['invoice_items'] as $item ) {
             if ( ! empty( $item['title'] ) ) {
                 $wpdb->insert(
@@ -303,7 +326,7 @@ function handle_invoice_form_submission() {
         }
     }
 
-    // Redirect to the same page with a success query arg
+    // Redirect on success
     $redirect_url = add_query_arg('invoice_submitted', 'true', wp_get_referer());
     wp_redirect($redirect_url);
     exit;
@@ -356,8 +379,13 @@ function display_sellers_page() {
 
     // Handle form submission for adding/editing a seller
     if (isset($_POST['submit_seller'])) {
+        // Verify nonce
+        if (!isset($_POST['seller_nonce_field']) || !wp_verify_nonce($_POST['seller_nonce_field'], 'manage_seller_nonce')) {
+            wp_die('خطای امنیتی. لطفاً دوباره تلاش کنید.');
+        }
+
         $name = sanitize_text_field($_POST['seller_name']);
-        $details = sanitize_textarea_field($_POST['seller_details']);
+        $mobile_number = sanitize_text_field($_POST['seller_mobile_number']);
         $image_url = esc_url_raw($_POST['seller_image_url']);
         $seller_id = isset($_POST['seller_id']) ? absint($_POST['seller_id']) : 0;
 
@@ -365,14 +393,14 @@ function display_sellers_page() {
             // Update existing seller
             $wpdb->update(
                 $sellers_table_name,
-                ['name' => $name, 'details' => $details, 'image_url' => $image_url],
+                ['name' => $name, 'mobile_number' => $mobile_number, 'image_url' => $image_url],
                 ['id' => $seller_id]
             );
         } else {
             // Add new seller
             $wpdb->insert(
                 $sellers_table_name,
-                ['name' => $name, 'details' => $details, 'image_url' => $image_url]
+                ['name' => $name, 'mobile_number' => $mobile_number, 'image_url' => $image_url]
             );
         }
         echo '<div class="updated"><p>فروشنده با موفقیت ذخیره شد.</p></div>';
@@ -381,8 +409,13 @@ function display_sellers_page() {
     // Handle seller deletion
     if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['seller_id'])) {
         $seller_id = absint($_GET['seller_id']);
-        $wpdb->delete($sellers_table_name, ['id' => $seller_id]);
-        echo '<div class="updated"><p>فروشنده با موفقیت حذف شد.</p></div>';
+        // Verify nonce for deletion
+        if (isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'delete_seller_' . $seller_id)) {
+            $wpdb->delete($sellers_table_name, ['id' => $seller_id]);
+            echo '<div class="updated"><p>فروشنده با موفقیت حذف شد.</p></div>';
+        } else {
+            wp_die('خطای امنیتی. لطفاً دوباره تلاش کنید.');
+        }
     }
 
     // Get seller to edit if in edit mode
@@ -400,26 +433,27 @@ function display_sellers_page() {
         <!-- Form for adding/editing a seller -->
         <h2><?php echo $seller_to_edit ? 'ویرایش فروشنده' : 'افزودن فروشنده جدید'; ?></h2>
         <form method="post" action="">
+            <?php wp_nonce_field( 'manage_seller_nonce', 'seller_nonce_field' ); ?>
             <input type="hidden" name="seller_id" value="<?php echo $seller_to_edit ? $seller_to_edit->id : ''; ?>">
             <table class="form-table">
                 <tr valign="top">
-                    <th scope="row"><label for="seller_name">نام فروشنده</label></th>
+                    <th scope="row"><label for="seller_name">نام و نام خانوادگی</label></th>
                     <td><input type="text" id="seller_name" name="seller_name" value="<?php echo $seller_to_edit ? esc_attr($seller_to_edit->name) : ''; ?>" required></td>
                 </tr>
-                <tr valign="top">
-                    <th scope="row"><label for="seller_details">مشخصات</label></th>
-                    <td><textarea id="seller_details" name="seller_details" rows="5" cols="50"><?php echo $seller_to_edit ? esc_textarea($seller_to_edit->details) : ''; ?></textarea></td>
+                 <tr valign="top">
+                    <th scope="row"><label for="seller_mobile_number">شماره موبایل</label></th>
+                    <td><input type="text" id="seller_mobile_number" name="seller_mobile_number" value="<?php echo $seller_to_edit ? esc_attr($seller_to_edit->mobile_number) : ''; ?>" required></td>
                 </tr>
                 <tr valign="top">
                     <th scope="row"><label for="seller_image_url">آدرس تصویر</label></th>
                     <td>
                         <input type="text" id="seller_image_url" name="seller_image_url" value="<?php echo $seller_to_edit ? esc_attr($seller_to_edit->image_url) : ''; ?>" class="regular-text">
                         <input type="button" class="button" id="upload_image_button" value="آپلود تصویر">
-                        <p class="description">آدرس تصویر فروشنده را وارد کنید یا یک تصویر جدید آپلود کنید.</p>
+                        <p class="description">ابعاد تصویر باید ۲۵۰×۲۵۰ پیکسل باشد. آدرس تصویر را وارد کنید یا یک تصویر جدید آپلود کنید.</p>
                     </td>
                 </tr>
             </table>
-            <?php submit_button($seller_to_edit ? 'ذخیره تغییرات' : 'افزودن فروشنده'); ?>
+            <?php submit_button($seller_to_edit ? 'ذخیره تغییرات' : 'افزودن فروشنده', 'primary', 'submit_seller'); ?>
         </form>
 
         <hr>
@@ -429,8 +463,8 @@ function display_sellers_page() {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th>نام</th>
-                    <th>مشخصات</th>
+                    <th>نام و نام خانوادگی</th>
+                    <th>شماره موبایل</th>
                     <th>تصویر</th>
                     <th>عملیات</th>
                 </tr>
@@ -440,7 +474,7 @@ function display_sellers_page() {
                     <?php foreach ($sellers as $seller) : ?>
                         <tr>
                             <td><?php echo esc_html($seller->name); ?></td>
-                            <td><?php echo esc_html($seller->details); ?></td>
+                            <td><?php echo esc_html($seller->mobile_number); ?></td>
                             <td>
                                 <?php if ($seller->image_url) : ?>
                                     <img src="<?php echo esc_url($seller->image_url); ?>" width="50" height="50" style="object-fit: cover;">
@@ -448,7 +482,7 @@ function display_sellers_page() {
                             </td>
                             <td>
                                 <a href="?page=invoice-sellers&action=edit&seller_id=<?php echo $seller->id; ?>">ویرایش</a> |
-                                <a href="?page=invoice-sellers&action=delete&seller_id=<?php echo $seller->id; ?>" onclick="return confirm('آیا از حذف این فروشنده مطمئن هستید؟')">حذف</a>
+                                <a href="<?php echo wp_nonce_url('?page=invoice-sellers&action=delete&seller_id=' . $seller->id, 'delete_seller_' . $seller->id); ?>" onclick="return confirm('آیا از حذف این فروشنده مطمئن هستید؟')">حذف</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -472,13 +506,24 @@ function display_sellers_page() {
             mediaUploader = wp.media.frames.file_frame = wp.media({
                 title: 'انتخاب تصویر',
                 button: {
-                    text: 'انتخاب'
+                    text: 'انتخاب تصویر'
+                },
+                library: {
+                    type: 'image'
                 },
                 multiple: false
             });
             mediaUploader.on('select', function() {
                 var attachment = mediaUploader.state().get('selection').first().toJSON();
-                $('#seller_image_url').val(attachment.url);
+
+                // ** Dimension Validation **
+                if (attachment.width !== 250 || attachment.height !== 250) {
+                    alert('خطا: ابعاد تصویر باید دقیقاً ۲۵۰×۲۵۰ پیکسل باشد. لطفاً تصویر دیگری انتخاب کنید.');
+                    // Clear the input field if the dimensions are wrong
+                    $('#seller_image_url').val('');
+                } else {
+                    $('#seller_image_url').val(attachment.url);
+                }
             });
             mediaUploader.open();
         });
@@ -610,7 +655,18 @@ function display_invoice_request_details_page() {
             <?php foreach($form_data as $data): ?>
                  <tr>
                     <th scope="row"><?php echo esc_html($data->field_label); ?></th>
-                    <td><?php echo nl2br( esc_html( $data->field_value ) ); ?></td>
+                    <td>
+                        <?php
+                        // Check if the value is a URL and looks like an image
+                        if (filter_var($data->field_value, FILTER_VALIDATE_URL) && preg_match('/\.(jpg|jpeg|png|gif)$/i', $data->field_value)) {
+                            echo '<a href="' . esc_url($data->field_value) . '" target="_blank">';
+                            echo '<img src="' . esc_url($data->field_value) . '" style="max-width: 150px; height: auto;" />';
+                            echo '</a>';
+                        } else {
+                            echo nl2br(esc_html($data->field_value));
+                        }
+                        ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
         </table>

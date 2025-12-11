@@ -88,7 +88,9 @@ function display_form_settings_page() {
                             <option value="text" <?php selected($field_to_edit ? $field_to_edit->field_type : '', 'text'); ?>>متن (Text)</option>
                             <option value="email" <?php selected($field_to_edit ? $field_to_edit->field_type : '', 'email'); ?>>ایمیل (Email)</option>
                             <option value="textarea" <?php selected($field_to_edit ? $field_to_edit->field_type : '', 'textarea'); ?>>ناحیه متنی (Textarea)</option>
+                            <option value="file" <?php selected($field_to_edit ? $field_to_edit->field_type : '', 'file'); ?>>فایل (File)</option>
                         </select>
+                        <p class="description">برای فیلدهای فایل، اعتبارسنجی ابعاد تصویر (۲۵۰×۲۵۰ پیکسل) به صورت خودکار اعمال می‌شود.</p>
                     </td>
                 </tr>
                  <tr valign="top">

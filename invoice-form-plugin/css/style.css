@@ -77,7 +77,8 @@
 
 .form-field input[type="text"],
 .form-field input[type="email"],
-.form-field textarea {
+.form-field textarea,
+.form-field select {
     width: 100%;
     padding: 12px;
     border: 1px solid #ccc;
@@ -88,7 +89,8 @@
 
 .form-field input[type="text"]:focus,
 .form-field input[type="email"]:focus,
-.form-field textarea:focus {
+.form-field textarea:focus,
+.form-field select:focus {
     border-color: #0073aa;
     outline: none;
 }
@@ -96,6 +98,12 @@
 .form-field textarea {
     height: 100px;
     resize: vertical;
+}
+
+.form-field .description {
+    font-size: 0.85em;
+    color: #888;
+    margin-top: 5px;
 }
 
 /* Add search icon to the search input */
@@ -118,53 +126,6 @@
 
 ::-ms-input-placeholder { /* Microsoft Edge */
   color: #b0b0b0 !important;
-}
-
-/* Tabs */
-.tabs {
-    display: flex;
-    border-bottom: 2px solid #ddd;
-    margin-bottom: 20px;
-}
-
-.tab-link {
-    background-color: transparent;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-size: 1em;
-    position: relative;
-    color: #555;
-    transition: color 0.3s;
-}
-
-.tab-link.active {
-    color: #0073aa;
-    font-weight: 600;
-}
-
-.tab-link.active::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: #0073aa;
-}
-
-.tab-content {
-    display: none;
-    padding: 10px 0;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-/* Add margin to the product search field */
-.tab-content .form-field {
-    margin-bottom: 25px;
 }
 
 /* Invoice Items Table (inside manual entry) */
@@ -195,22 +156,15 @@
     min-height: 42px;
 }
 
-.remove-item-btn {
+.remove-invoice-item {
     background: none;
     border: none;
     color: #e74c3c;
     cursor: pointer;
     font-weight: bold;
-    font-size: 1em;
-    text-align: center;
-    padding: 5px;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.remove-item-btn span {
     font-size: 1.5em;
+    text-align: center;
+    padding: 0;
     line-height: 1;
 }
 
@@ -231,11 +185,7 @@
 }
 
 
-/* File Upload Tab */
-#file-upload p {
-    margin-top: 0;
-    color: #666;
-}
+/* File Upload */
 input[type="file"] {
     border: 1px solid #ccc;
     padding: 10px;
@@ -283,7 +233,7 @@ input[type="file"] {
 }
 
 .submit-btn:hover {
-    background-color: #005a87;
+    background-color: #c0392b;
 }
 
 /* Success Message */
@@ -302,12 +252,16 @@ input[type="file"] {
     background: #fff;
     max-height: 200px;
     overflow-y: auto;
+    position: absolute;
+    width: 100%;
+    z-index: 100;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
-.search-result-item {
+.product-result {
     padding: 10px;
     cursor: pointer;
 }
-.search-result-item:hover {
+.product-result:hover {
     background: #f0f0f0;
 }
 
@@ -344,7 +298,7 @@ input[type="file"] {
         border-bottom: none;
     }
 
-    .remove-item-btn {
+    .remove-invoice-item {
         grid-row: 4; /* Ensure button is last */
         justify-self: center; /* Center the remove button */
         width: 50%;
@@ -357,4 +311,38 @@ input[type="file"] {
     .submit-btn {
         white-space: normal; /* Allow text to wrap on small screens */
     }
+}
+
+/* Seller Details Styles */
+#seller-details-container {
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    margin-top: 10px;
+}
+
+.seller-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.seller-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ddd;
+}
+
+.seller-contact {
+    display: flex;
+    flex-direction: column;
+}
+
+.seller-phone {
+    margin: 0;
+    font-size: 1.1em;
+    color: #333;
 }

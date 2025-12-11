@@ -15,17 +15,18 @@ function invoice_form_shortcode() {
     $sellers_table = $wpdb->prefix . 'invoice_sellers';
     $fields_table = $wpdb->prefix . 'invoice_form_fields';
 
-    $sellers = $wpdb->get_results("SELECT id, name FROM $sellers_table ORDER BY name ASC");
+    $sellers = $wpdb->get_results("SELECT id, name, image_url, mobile_number FROM $sellers_table ORDER BY name ASC");
     $fields = $wpdb->get_results("SELECT * FROM $fields_table ORDER BY field_order ASC");
 
     ob_start();
 
     // Enqueue Styles & Scripts
-    wp_enqueue_style('invoice-form-css', plugin_dir_url(__FILE__) . 'css/style.css', array(), '1.2');
-    wp_enqueue_script('invoice-form-js', plugin_dir_url(__FILE__) . 'assets/js/form-handler.js', array('jquery'), '1.2', true);
+    wp_enqueue_style('invoice-form-css', plugin_dir_url(__FILE__) . 'css/style.css', array(), '1.3');
+    wp_enqueue_script('invoice-form-js', plugin_dir_url(__FILE__) . 'assets/js/form-handler.js', array('jquery'), '1.3', true);
     wp_localize_script('invoice-form-js', 'invoice_form_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce'    => wp_create_nonce('invoice-form-nonce')
+        'nonce'    => wp_create_nonce('invoice-form-nonce'),
+        'sellers'  => $sellers
     ));
 
     // Display success message
@@ -53,6 +54,9 @@ function invoice_form_shortcode() {
                                  <?php endforeach; ?>
                              </select>
                          </div>
+                        <div id="seller-details-container" class="form-field full-width" style="display: none;">
+                            <!-- Seller details will be populated by JS -->
+                        </div>
                         <?php endif; ?>
 
                         <?php

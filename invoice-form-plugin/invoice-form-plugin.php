@@ -15,8 +15,21 @@ function invoice_form_shortcode() {
     $sellers_table = $wpdb->prefix . 'invoice_sellers';
     $fields_table = $wpdb->prefix . 'invoice_form_fields';
 
-    $sellers = $wpdb->get_results("SELECT id, name, image_url, mobile_number FROM $sellers_table ORDER BY name ASC");
-    $fields = $wpdb->get_results("SELECT * FROM $fields_table ORDER BY field_order ASC");
+    // ⚡ Bolt: Cache seller query to reduce DB load on every page view.
+    // The cache is invalidated when a seller is added, updated, or deleted in the admin panel.
+    $sellers = get_transient('invoice_form_sellers');
+    if (false === $sellers) {
+        $sellers = $wpdb->get_results("SELECT id, name, image_url, mobile_number FROM $sellers_table ORDER BY name ASC");
+        set_transient('invoice_form_sellers', $sellers, 12 * HOUR_IN_SECONDS); // Cache for 12 hours
+    }
+
+    // ⚡ Bolt: Cache form fields query to reduce DB load on every page view.
+    // The cache is invalidated when a field is added, updated, deleted, or reordered in the admin panel.
+    $fields = get_transient('invoice_form_fields');
+    if (false === $fields) {
+        $fields = $wpdb->get_results("SELECT * FROM $fields_table ORDER BY field_order ASC");
+        set_transient('invoice_form_fields', $fields, 12 * HOUR_IN_SECONDS); // Cache for 12 hours
+    }
 
     ob_start();
 
@@ -413,6 +426,8 @@ function display_sellers_page() {
                 ['name' => $name, 'mobile_number' => $mobile_number, 'image_url' => $image_url]
             );
         }
+        // ⚡ Bolt: Invalidate the seller cache after a change.
+        delete_transient('invoice_form_sellers');
         echo '<div class="updated"><p>فروشنده با موفقیت ذخیره شد.</p></div>';
     }
 
@@ -422,6 +437,8 @@ function display_sellers_page() {
         // Verify nonce for deletion
         if (isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'delete_seller_' . $seller_id)) {
             $wpdb->delete($sellers_table_name, ['id' => $seller_id]);
+            // ⚡ Bolt: Invalidate the seller cache after a change.
+            delete_transient('invoice_form_sellers');
             echo '<div class="updated"><p>فروشنده با موفقیت حذف شد.</p></div>';
         } else {
             wp_die('خطای امنیتی. لطفاً دوباره تلاش کنید.');

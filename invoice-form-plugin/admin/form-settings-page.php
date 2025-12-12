@@ -29,12 +29,16 @@ function display_form_settings_page() {
             if ($field_id > 0) {
                 // Update existing field
                 $wpdb->update($fields_table_name, $data, ['id' => $field_id]);
+                // ⚡ Bolt: Invalidate the form fields cache after an update.
+                delete_transient('invoice_form_fields');
                 echo '<div class="updated"><p>فیلد با موفقیت به‌روزرسانی شد.</p></div>';
             } else {
                 // Add new field - get max order and add 1
                 $max_order = $wpdb->get_var("SELECT MAX(field_order) FROM $fields_table_name");
                 $data['field_order'] = $max_order + 1;
                 $wpdb->insert($fields_table_name, $data);
+                 // ⚡ Bolt: Invalidate the form fields cache after adding a new field.
+                delete_transient('invoice_form_fields');
                 echo '<div class="updated"><p>فیلد جدید با موفقیت اضافه شد.</p></div>';
             }
         }
@@ -46,6 +50,8 @@ function display_form_settings_page() {
         // Add nonce check for security
         if (wp_verify_nonce($_GET['_wpnonce'], 'delete_field_' . $field_id)) {
             $wpdb->delete($fields_table_name, ['id' => $field_id]);
+            // ⚡ Bolt: Invalidate the form fields cache after a change.
+            delete_transient('invoice_form_fields');
             echo '<div class="updated"><p>فیلد با موفقیت حذف شد.</p></div>';
         }
     }
@@ -205,6 +211,10 @@ function update_field_order_callback() {
                 ['id' => absint($field_id)]
             );
         }
+
+        // ⚡ Bolt: Invalidate the form fields cache after reordering.
+        delete_transient('invoice_form_fields');
+
         wp_send_json_success('Order updated.');
     } else {
         wp_send_json_error('Invalid data.');

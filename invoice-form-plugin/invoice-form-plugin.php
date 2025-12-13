@@ -585,8 +585,170 @@ function display_sellers_page() {
     <?php
 }
 
-// Include the form settings page
-require_once plugin_dir_path(__FILE__) . 'admin/form-settings-page.php';
+// All functions are now in this file, no need to include separate files.
+
+// AJAX handler to save form fields order
+function save_form_fields_order() {
+    // Security check
+    check_ajax_referer('invoice_form_settings_nonce', 'nonce');
+
+    if (isset($_POST['order']) && is_array($_POST['order'])) {
+        global $wpdb;
+        $fields_table_name = $wpdb->prefix . 'invoice_form_fields';
+        $order = $_POST['order'];
+
+        foreach ($order as $index => $field_id) {
+            $wpdb->update(
+                $fields_table_name,
+                ['field_order' => $index + 1],
+                ['id' => absint($field_id)]
+            );
+        }
+        wp_send_json_success('Order saved.');
+    } else {
+        wp_send_json_error('Invalid data.');
+    }
+}
+add_action('wp_ajax_save_fields_order', 'save_form_fields_order');
+
+
+// Display the form settings page
+function display_form_settings_page() {
+    global $wpdb;
+    $fields_table_name = $wpdb->prefix . 'invoice_form_fields';
+
+    // Handle Add/Edit Field
+    if (isset($_POST['submit_field']) && check_admin_referer('manage_field_nonce')) {
+        $field_id = isset($_POST['field_id']) ? absint($_POST['field_id']) : 0;
+        $field_data = array(
+            'field_name'    => sanitize_key($_POST['field_name']),
+            'field_label'   => sanitize_text_field($_POST['field_label']),
+            'field_type'    => sanitize_text_field($_POST['field_type']),
+            'placeholder'   => sanitize_text_field($_POST['placeholder']),
+            'is_required'   => isset($_POST['is_required']) ? 1 : 0,
+        );
+
+        if (empty($field_data['field_name']) || empty($field_data['field_label'])) {
+             echo '<div class="error"><p>نام فیلد و برچسب فیلد اجباری هستند.</p></div>';
+        } else {
+            if ($field_id > 0) {
+                $wpdb->update($fields_table_name, $field_data, array('id' => $field_id));
+            } else {
+                $wpdb->insert($fields_table_name, $field_data);
+            }
+             echo '<div class="updated"><p>فیلد با موفقیت ذخیره شد.</p></div>';
+        }
+    }
+
+    // Handle Delete Field
+    if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['field_id'])) {
+        if (check_admin_referer('delete_field_' . absint($_GET['field_id']))) {
+            $field_id = absint($_GET['field_id']);
+            $wpdb->delete($fields_table_name, array('id' => $field_id));
+            echo '<div class="updated"><p>فیلد با موفقیت حذف شد.</p></div>';
+        }
+    }
+
+    $field_to_edit = null;
+    if (isset($_GET['action']) && $_GET['action'] == 'edit' && isset($_GET['field_id'])) {
+        $field_id = absint($_GET['field_id']);
+        $field_to_edit = $wpdb->get_row($wpdb->prepare("SELECT * FROM $fields_table_name WHERE id = %d", $field_id));
+    }
+
+    $fields = $wpdb->get_results("SELECT * FROM $fields_table_name ORDER BY field_order ASC");
+    ?>
+    <div class="wrap">
+        <h1>تنظیمات فرم</h1>
+
+        <!-- Add/Edit Form -->
+        <h2><?php echo $field_to_edit ? 'ویرایش فیلد' : 'افزودن فیلد جدید'; ?></h2>
+        <form method="post">
+            <input type="hidden" name="field_id" value="<?php echo $field_to_edit ? esc_attr($field_to_edit->id) : ''; ?>">
+            <?php wp_nonce_field('manage_field_nonce'); ?>
+            <table class="form-table">
+                 <tr valign="top">
+                    <th scope="row"><label for="field_label">برچسب فیلد</label></th>
+                    <td><input type="text" id="field_label" name="field_label" value="<?php echo $field_to_edit ? esc_attr($field_to_edit->field_label) : ''; ?>" required></td>
+                </tr>
+                 <tr valign="top">
+                    <th scope="row"><label for="field_name">نام فیلد (انگلیسی)</label></th>
+                    <td><input type="text" id="field_name" name="field_name" value="<?php echo $field_to_edit ? esc_attr($field_to_edit->field_name) : ''; ?>" required pattern="[a-zA-Z0-9_]+">
+                    <p class="description">فقط از حروف انگلیسی، اعداد و آندرلاین استفاده کنید (مثال: customer_address).</p></td>
+                </tr>
+                 <tr valign="top">
+                    <th scope="row"><label for="field_type">نوع فیلد</label></th>
+                    <td>
+                        <select id="field_type" name="field_type">
+                            <?php
+                            $types = ['text' => 'متن', 'textarea' => 'متن بلند', 'email' => 'ایمیل', 'file' => 'فایل'];
+                            foreach($types as $key => $value){
+                                $selected = $field_to_edit && $field_to_edit->field_type == $key ? 'selected' : '';
+                                echo "<option value='".esc_attr($key)."' $selected>".esc_html($value)."</option>";
+                            }
+                            ?>
+                        </select>
+                    </td>
+                </tr>
+                 <tr valign="top">
+                    <th scope="row"><label for="placeholder">متن راهنما (Placeholder)</label></th>
+                    <td><input type="text" id="placeholder" name="placeholder" value="<?php echo $field_to_edit ? esc_attr($field_to_edit->placeholder) : ''; ?>"></td>
+                </tr>
+                 <tr valign="top">
+                    <th scope="row">اجباری باشد؟</th>
+                    <td><label><input type="checkbox" name="is_required" value="1" <?php checked($field_to_edit ? $field_to_edit->is_required : 0, 1); ?>> بله</label></td>
+                </tr>
+            </table>
+            <?php submit_button($field_to_edit ? 'ذخیره تغییرات' : 'افزودن فیلد'); ?>
+        </form>
+        <hr>
+
+        <!-- Fields List -->
+        <h2>لیست فیلدها</h2>
+        <p>برای مرتب‌سازی، فیلدها را بکشید و رها کنید.</p>
+        <ul id="sortable-fields">
+            <?php foreach ($fields as $field) : ?>
+                <li id="field_<?php echo esc_attr($field->id); ?>">
+                    <strong><?php echo esc_html($field->field_label); ?></strong> (نوع: <?php echo esc_html($field->field_type); ?>)
+                    <span>
+                        <a href="?page=invoice-form-settings&action=edit&field_id=<?php echo $field->id; ?>">ویرایش</a> |
+                        <a href="<?php echo wp_nonce_url('?page=invoice-form-settings&action=delete&field_id=' . $field->id, 'delete_field_' . $field->id); ?>" class="delete-field" onclick="return confirm('آیا از حذف این فیلد مطمئن هستید؟')">حذف</a>
+                    </span>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+    <script>
+    jQuery(document).ready(function($) {
+        $("#sortable-fields").sortable({
+            update: function(event, ui) {
+                var field_order = $(this).sortable('toArray').map(function(item) {
+                    return item.replace('field_', '');
+                });
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'save_fields_order',
+                        nonce: '<?php echo wp_create_nonce("invoice_form_settings_nonce"); ?>',
+                        order: field_order
+                    },
+                    success: function(response) {
+                        if(!response.success) {
+                            alert('خطایی در ذخیره ترتیب رخ داد.');
+                        }
+                    }
+                });
+            }
+        });
+    });
+    </script>
+    <?php
+     // Enqueue jQuery UI Sortable
+    wp_enqueue_script('jquery-ui-sortable');
+}
+
+// All functionality is now included in this single file.
 
 
 // Function to handle CSV export

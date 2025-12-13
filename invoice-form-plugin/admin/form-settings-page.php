@@ -37,6 +37,8 @@ function display_form_settings_page() {
                 $wpdb->insert($fields_table_name, $data);
                 echo '<div class="updated"><p>فیلد جدید با موفقیت اضافه شد.</p></div>';
             }
+            // Performance optimization: Invalidate form fields cache
+            delete_transient('invoice_form_fields');
         }
     }
 
@@ -46,6 +48,8 @@ function display_form_settings_page() {
         // Add nonce check for security
         if (wp_verify_nonce($_GET['_wpnonce'], 'delete_field_' . $field_id)) {
             $wpdb->delete($fields_table_name, ['id' => $field_id]);
+            // Performance optimization: Invalidate form fields cache
+            delete_transient('invoice_form_fields');
             echo '<div class="updated"><p>فیلد با موفقیت حذف شد.</p></div>';
         }
     }
@@ -205,6 +209,10 @@ function update_field_order_callback() {
                 ['id' => absint($field_id)]
             );
         }
+
+        // Performance optimization: Invalidate form fields cache
+        delete_transient('invoice_form_fields');
+
         wp_send_json_success('Order updated.');
     } else {
         wp_send_json_error('Invalid data.');

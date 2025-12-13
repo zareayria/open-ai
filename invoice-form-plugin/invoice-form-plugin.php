@@ -15,8 +15,21 @@ function invoice_form_shortcode() {
     $sellers_table = $wpdb->prefix . 'invoice_sellers';
     $fields_table = $wpdb->prefix . 'invoice_form_fields';
 
-    $sellers = $wpdb->get_results("SELECT id, name, image_url, mobile_number FROM $sellers_table ORDER BY name ASC");
-    $fields = $wpdb->get_results("SELECT * FROM $fields_table ORDER BY field_order ASC");
+    // Performance optimization: Cache database queries for sellers
+    $sellers = get_transient('invoice_form_sellers');
+    if (false === $sellers) {
+        $sellers = $wpdb->get_results("SELECT id, name, image_url, mobile_number FROM $sellers_table ORDER BY name ASC");
+        // Cache for 12 hours, but will be invalidated on change
+        set_transient('invoice_form_sellers', $sellers, 12 * HOUR_IN_SECONDS);
+    }
+
+    // Performance optimization: Cache database queries for form fields
+    $fields = get_transient('invoice_form_fields');
+    if (false === $fields) {
+        $fields = $wpdb->get_results("SELECT * FROM $fields_table ORDER BY field_order ASC");
+        // Cache for 12 hours, but will be invalidated on change
+        set_transient('invoice_form_fields', $fields, 12 * HOUR_IN_SECONDS);
+    }
 
     ob_start();
 
@@ -413,6 +426,8 @@ function display_sellers_page() {
                 ['name' => $name, 'mobile_number' => $mobile_number, 'image_url' => $image_url]
             );
         }
+        // Performance optimization: Invalidate seller cache
+        delete_transient('invoice_form_sellers');
         echo '<div class="updated"><p>فروشنده با موفقیت ذخیره شد.</p></div>';
     }
 
@@ -422,6 +437,8 @@ function display_sellers_page() {
         // Verify nonce for deletion
         if (isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'delete_seller_' . $seller_id)) {
             $wpdb->delete($sellers_table_name, ['id' => $seller_id]);
+            // Performance optimization: Invalidate seller cache
+            delete_transient('invoice_form_sellers');
             echo '<div class="updated"><p>فروشنده با موفقیت حذف شد.</p></div>';
         } else {
             wp_die('خطای امنیتی. لطفاً دوباره تلاش کنید.');

@@ -1,348 +1,205 @@
-/* General Container Styling */
-.invoice-form-container {
-    max-width: 1200px;
-    margin: 40px auto;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 30px;
-    /* font-family rule removed to inherit from theme */
+/* General RTL and Font */
+body {
     direction: rtl;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    text-align: right;
 }
 
-#invoice-form {
-    display: flex;
-    gap: 30px;
+#ifp-invoice-form, .wrap {
+    font-family: 'Tahoma', sans-serif;
 }
 
-/* Main Content (Left Column) */
-.form-main-content {
-    flex: 3;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
-
-/* Sidebar (Right Column) */
-.form-sidebar {
-    flex: 1;
-}
-
-.form-section {
-    background-color: #fff;
+/* Public Form Styles */
+.ifp-form-container {
+    max-width: 850px;
+    margin: 30px auto;
     padding: 25px;
+    background: #fff;
     border-radius: 8px;
-    border: 1px solid #e5e5e5;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.form-section h3 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 1.5em;
-    color: #333;
-    text-align: center;
+.ifp-form-group {
+    margin-bottom: 18px;
 }
 
-.section-description {
-    margin-top: 0;
-    margin-bottom: 25px;
-    color: #777;
-    font-size: 0.95em;
-    text-align: center;
-}
-
-/* Form Grid Layout */
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.form-field.full-width {
-    grid-column: 1 / -1;
-}
-
-/* Form Fields */
-.form-field {
-    position: relative;
-}
-
-.form-field label {
+.ifp-form-group label {
     display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
+    font-weight: bold;
+    margin-bottom: 7px;
     color: #444;
 }
 
-.form-field input[type="text"],
-.form-field input[type="email"],
-.form-field textarea,
-.form-field select {
+.ifp-form-group input[type="text"],
+.ifp-form-group textarea,
+.ifp-form-group select {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-    transition: border-color 0.3s;
-}
-
-.form-field input[type="text"]:focus,
-.form-field input[type="email"]:focus,
-.form-field textarea:focus,
-.form-field select:focus {
-    border-color: #0073aa;
-    outline: none;
-}
-
-.form-field textarea {
-    height: 100px;
-    resize: vertical;
-}
-
-.form-field .description {
-    font-size: 0.85em;
-    color: #888;
-    margin-top: 5px;
-}
-
-/* Add search icon to the search input */
-#product-search {
-    padding-right: 35px; /* Make space for the icon */
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>');
-    background-repeat: no-repeat;
-    background-position: calc(100% - 10px) center;
-}
-
-/* Style for placeholders */
-::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-  color: #b0b0b0 !important; /* Lighter color */
-  opacity: 1; /* Firefox */
-}
-
-:-ms-input-placeholder { /* Internet Explorer 10-11 */
-  color: #b0b0b0 !important;
-}
-
-::-ms-input-placeholder { /* Microsoft Edge */
-  color: #b0b0b0 !important;
-}
-
-/* Invoice Items Table (inside manual entry) */
-#invoice-items-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-.invoice-item {
-    display: grid;
-    /* Adjust grid to make description wider */
-    grid-template-columns: 2.5fr 1fr 3fr 0.5fr;
-    gap: 10px;
-    align-items: center;
-}
-.invoice-item input,
-.invoice-item textarea {
-     width: 100%;
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-}
-
-.invoice-item textarea {
-    height: 42px; /* Match input height */
-    resize: vertical;
-    min-height: 42px;
-}
-
-.remove-invoice-item {
-    background: none;
-    border: none;
-    color: #e74c3c;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 1.5em;
-    text-align: center;
-    padding: 0;
-    line-height: 1;
-}
-
-.add-item-btn {
-    background-color: #f0f0f0;
-    border: 1px dashed #ccc;
-    color: #555;
-    padding: 10px;
-    width: 100%;
-    text-align: center;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-top: 15px;
-    transition: background-color 0.3s;
-}
-.add-item-btn:hover {
-    background-color: #e9e9e9;
-}
-
-
-/* File Upload */
-input[type="file"] {
-    border: 1px solid #ccc;
-    padding: 10px;
-    border-radius: 5px;
-    width: 100%;
-}
-
-
-/* Sidebar Summary Box */
-.summary-box {
-    background-color: #fff;
-    padding: 25px;
-    border-radius: 8px;
-    border: 1px solid #e5e5e5;
-    position: sticky;
-    top: 30px; /* Adjust as needed */
-}
-
-.summary-box h4 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.4em;
-    color: #333;
-}
-
-.summary-description {
-    font-size: 0.9em;
-    color: #777;
-    line-height: 1.6;
-    margin-bottom: 20px;
-}
-
-.submit-btn {
-    background-color: #e74c3c; /* Red color */
-    color: #fff;
-    border: none;
-    padding: 15px;
-    width: 100%;
-    font-size: 1.1em;
-    font-weight: 600;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    white-space: nowrap; /* Prevent text from wrapping */
-}
-
-.submit-btn:hover {
-    background-color: #c0392b;
-}
-
-/* Success Message */
-.invoice-success-message {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-}
-
-/* Product Search */
-#product-search-results {
-    border: 1px solid #ccc;
-    background: #fff;
-    max-height: 200px;
-    overflow-y: auto;
-    position: absolute;
-    width: 100%;
-    z-index: 100;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-.product-result {
-    padding: 10px;
-    cursor: pointer;
-}
-.product-result:hover {
-    background: #f0f0f0;
-}
-
-/* Responsive Styles */
-@media (max-width: 992px) {
-    /* Force columns to stack on smaller screens */
-    #invoice-form {
-        flex-wrap: wrap;
-    }
-    .form-main-content,
-    .form-sidebar {
-        width: 100%;
-        flex: 1 1 100%; /* Allow items to grow and shrink, with a 100% basis */
-    }
-
-    .summary-box {
-        position: static; /* Remove sticky positioning on smaller screens */
-    }
-}
-
-@media (max-width: 768px) {
-    .form-grid {
-        grid-template-columns: 1fr; /* Stack grid items */
-    }
-
-    .invoice-item {
-        grid-template-columns: 1fr; /* Stack item fields */
-        gap: 15px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #eee;
-    }
-
-    .invoice-item:last-child {
-        border-bottom: none;
-    }
-
-    .remove-invoice-item {
-        grid-row: 4; /* Ensure button is last */
-        justify-self: center; /* Center the remove button */
-        width: 50%;
-        background-color: #fbeae8;
-        border: 1px solid #e74c3c;
-        border-radius: 5px;
-        padding: 8px;
-    }
-
-    .submit-btn {
-        white-space: normal; /* Allow text to wrap on small screens */
-    }
-}
-
-/* Seller Details Styles */
-#seller-details-container {
-    padding: 15px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    background-color: #f9f9f9;
-    margin-top: 10px;
+    box-sizing: border-box;
 }
 
-.seller-info {
+/* Seller Section */
+.ifp-seller-section {
+    background: #f7f7f7;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.ifp-seller-section .ifp-form-group {
+    flex-grow: 1;
+}
+#seller-info-container {
     display: flex;
     align-items: center;
     gap: 15px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 4px;
 }
-
-.seller-image {
+#seller-photo {
     width: 80px;
     height: 80px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #ddd;
 }
-
-.seller-contact {
-    display: flex;
-    flex-direction: column;
+#seller-phone {
+    font-weight: bold;
+    color: #333;
 }
 
-.seller-phone {
+/* Items Section */
+.ifp-items-section h3, .ifp-customer-section h3 {
+    border-bottom: 2px solid #0073aa;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+#invoice-items-container .invoice-item {
+    padding: 15px;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Default to two columns */
+    gap: 15px;
+}
+
+.invoice-item .ifp-form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.invoice-item .item-actions {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+}
+
+#add-item-btn {
+    background: #fff;
+    color: #d32f2f;
+    border: 1px solid #d32f2f;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+#add-item-btn:hover {
+    background: #d32f2f;
+    color: #fff;
+}
+
+.remove-item-btn {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    color: #999;
+    cursor: pointer;
+}
+.remove-item-btn:hover {
+    color: #d32f2f;
+}
+
+
+/* Submission & Messages */
+.ifp-form-submission button {
+    background: #0073aa;
+    color: #fff;
+    border: none;
+    padding: 12px 25px;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.ifp-form-submission button:hover {
+    background: #005a87;
+}
+
+#ifp-form-messages, .ifp-success-message {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid;
+}
+#ifp-form-messages {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+.ifp-success-message {
+    background: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+
+/* Admin Page Styles */
+.wrap .summary-stats {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+.wrap form {
+    margin-bottom: 15px;
+}
+
+#sortable-fields {
+    list-style: none;
     margin: 0;
-    font-size: 1.1em;
-    color: #333;
+    padding: 0;
+}
+#sortable-fields li {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    padding: 10px 15px;
+    margin-bottom: 5px;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#sortable-fields .delete-field {
+    color: #a00;
+    text-decoration: none;
+}
+#sortable-fields .delete-field:hover {
+    color: #f00;
+}
+
+@media (max-width: 768px) {
+    .ifp-seller-section {
+        flex-direction: column;
+    }
+    #invoice-items-container .invoice-item {
+        grid-template-columns: 1fr; /* Stack on smaller screens */
+    }
+    .invoice-item .ifp-form-group.full-width {
+        grid-column: auto;
+    }
 }

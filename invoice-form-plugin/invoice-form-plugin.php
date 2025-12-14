@@ -15,8 +15,24 @@ function invoice_form_shortcode() {
     $sellers_table = $wpdb->prefix . 'invoice_sellers';
     $fields_table = $wpdb->prefix . 'invoice_form_fields';
 
-    $sellers = $wpdb->get_results("SELECT id, name FROM $sellers_table ORDER BY name ASC");
-    $fields = $wpdb->get_results("SELECT * FROM $fields_table ORDER BY field_order ASC");
+    // ⚡ Bolt: Cache seller and field queries to improve performance.
+    // Attempt to retrieve sellers from cache
+    $sellers = get_transient('invoice_form_sellers');
+    if (false === $sellers) {
+        // If not in cache, query the database
+        $sellers = $wpdb->get_results("SELECT id, name FROM $sellers_table ORDER BY name ASC");
+        // Cache the result for 12 hours
+        set_transient('invoice_form_sellers', $sellers, 12 * HOUR_IN_SECONDS);
+    }
+
+    // Attempt to retrieve form fields from cache
+    $fields = get_transient('invoice_form_fields');
+    if (false === $fields) {
+        // If not in cache, query the database
+        $fields = $wpdb->get_results("SELECT * FROM $fields_table ORDER BY field_order ASC");
+        // Cache the result for 12 hours
+        set_transient('invoice_form_fields', $fields, 12 * HOUR_IN_SECONDS);
+    }
 
     ob_start();
 
@@ -487,6 +503,9 @@ function display_sellers_page() {
                 ['name' => $name, 'mobile_number' => $mobile_number, 'image_url' => $image_url]
             );
         }
+        // ⚡ Bolt: Invalidate seller cache on update/create.
+        // This ensures that the frontend form always shows the latest seller list.
+        delete_transient('invoice_form_sellers');
         echo '<div class="updated"><p>فروشنده با موفقیت ذخیره شد.</p></div>';
     }
 
@@ -496,6 +515,9 @@ function display_sellers_page() {
         // Verify nonce for deletion
         if (isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'delete_seller_' . $seller_id)) {
             $wpdb->delete($sellers_table_name, ['id' => $seller_id]);
+            // ⚡ Bolt: Invalidate seller cache on delete.
+            // This ensures that deleted sellers are removed from the frontend form.
+            delete_transient('invoice_form_sellers');
             echo '<div class="updated"><p>فروشنده با موفقیت حذف شد.</p></div>';
         } else {
             wp_die('خطای امنیتی. لطفاً دوباره تلاش کنید.');
@@ -604,6 +626,9 @@ function save_form_fields_order() {
                 ['id' => absint($field_id)]
             );
         }
+        // ⚡ Bolt: Invalidate form fields cache on reorder.
+        // This ensures the frontend form reflects the new field order.
+        delete_transient('invoice_form_fields');
         wp_send_json_success('Order saved.');
     } else {
         wp_send_json_error('Invalid data.');
@@ -636,7 +661,10 @@ function display_form_settings_page() {
             } else {
                 $wpdb->insert($fields_table_name, $field_data);
             }
-             echo '<div class="updated"><p>فیلد با موفقیت ذخیره شد.</p></div>';
+            // ⚡ Bolt: Invalidate form fields cache on update/create.
+            // Ensures the frontend form always shows the latest set of fields.
+            delete_transient('invoice_form_fields');
+            echo '<div class="updated"><p>فیلد با موفقیت ذخیره شد.</p></div>';
         }
     }
 
@@ -645,6 +673,9 @@ function display_form_settings_page() {
         if (check_admin_referer('delete_field_' . absint($_GET['field_id']))) {
             $field_id = absint($_GET['field_id']);
             $wpdb->delete($fields_table_name, array('id' => $field_id));
+            // ⚡ Bolt: Invalidate form fields cache on delete.
+            // Ensures deleted fields are removed from the frontend form.
+            delete_transient('invoice_form_fields');
             echo '<div class="updated"><p>فیلد با موفقیت حذف شد.</p></div>';
         }
     }

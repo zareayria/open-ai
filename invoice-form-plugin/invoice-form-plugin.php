@@ -585,6 +585,226 @@ function display_sellers_page() {
     <?php
 }
 
+/**
+ * Register Exhibition Custom Post Type.
+ */
+function sanatgard_register_exhibition_cpt() {
+    $labels = array(
+        'name'                  => _x( 'نمایشگاه‌ها', 'Post Type General Name', 'invoice-form-plugin' ),
+        'singular_name'         => _x( 'نمایشگاه', 'Post Type Singular Name', 'invoice-form-plugin' ),
+        'menu_name'             => __( 'نمایشگاه‌ها', 'invoice-form-plugin' ),
+        'name_admin_bar'        => __( 'نمایشگاه', 'invoice-form-plugin' ),
+        'archives'              => __( 'آرشیو نمایشگاه‌ها', 'invoice-form-plugin' ),
+        'attributes'            => __( 'ویژگی‌های نمایشگاه', 'invoice-form-plugin' ),
+        'parent_item_colon'     => __( 'نمایشگاه مادر:', 'invoice-form-plugin' ),
+        'all_items'             => __( 'همه نمایشگاه‌ها', 'invoice-form-plugin' ),
+        'add_new_item'          => __( 'افزودن نمایشگاه جدید', 'invoice-form-plugin' ),
+        'add_new'               => __( 'افزودن جدید', 'invoice-form-plugin' ),
+        'new_item'              => __( 'نمایشگاه جدید', 'invoice-form-plugin' ),
+        'edit_item'             => __( 'ویرایش نمایشگاه', 'invoice-form-plugin' ),
+        'update_item'           => __( 'به‌روزرسانی نمایشگاه', 'invoice-form-plugin' ),
+        'view_item'             => __( 'مشاهده نمایشگاه', 'invoice-form-plugin' ),
+        'view_items'            => __( 'مشاهده نمایشگاه‌ها', 'invoice-form-plugin' ),
+        'search_items'          => __( 'جستجوی نمایشگاه', 'invoice-form-plugin' ),
+        'not_found'             => __( 'یافت نشد', 'invoice-form-plugin' ),
+        'not_found_in_trash'    => __( 'در زباله‌دان یافت نشد', 'invoice-form-plugin' ),
+        'featured_image'        => __( 'تصویر شاخص', 'invoice-form-plugin' ),
+        'set_featured_image'    => __( 'تنظیم تصویر شاخص', 'invoice-form-plugin' ),
+        'remove_featured_image' => __( 'حذف تصویر شاخص', 'invoice-form-plugin' ),
+        'use_featured_image'    => __( 'استفاده به عنوان تصویر شاخص', 'invoice-form-plugin' ),
+        'insert_into_item'      => __( 'درج در نمایشگاه', 'invoice-form-plugin' ),
+        'uploaded_to_this_item' => __( 'در این نمایشگاه بارگذاری شد', 'invoice-form-plugin' ),
+        'items_list'            => __( 'لیست نمایشگاه‌ها', 'invoice-form-plugin' ),
+        'items_list_navigation' => __( 'پیمایش لیست نمایشگاه‌ها', 'invoice-form-plugin' ),
+        'filter_items_list'     => __( 'فیلتر لیست نمایشگاه‌ها', 'invoice-form-plugin' ),
+    );
+    $args = array(
+        'label'                 => __( 'نمایشگاه', 'invoice-form-plugin' ),
+        'description'           => __( 'پست‌های مربوط به نمایشگاه‌های صنعتی', 'invoice-form-plugin' ),
+        'labels'                => $labels,
+        'supports'              => array( 'title', 'editor', 'excerpt', 'thumbnail', 'revisions', 'custom-fields' ),
+        'taxonomies'            => array( 'category', 'post_tag' ),
+        'hierarchical'          => false,
+        'public'                => true,
+        'show_ui'               => true,
+        'show_in_menu'          => true,
+        'menu_position'         => 5,
+        'menu_icon'             => 'dashicons-building',
+        'show_in_admin_bar'     => true,
+        'show_in_nav_menus'     => true,
+        'can_export'            => true,
+        'has_archive'           => true,
+        'exclude_from_search'   => false,
+        'publicly_queryable'    => true,
+        'capability_type'       => 'post',
+        'rewrite'               => array( 'slug' => 'exhibitions' ),
+    );
+    register_post_type( 'exhibition', $args );
+}
+add_action( 'init', 'sanatgard_register_exhibition_cpt', 0 );
+
+/**
+ * Register ACF fields for the Exhibition CPT.
+ */
+function sanatgard_register_acf_fields() {
+    if( ! function_exists('acf_add_local_field_group') ) {
+        return;
+    }
+
+    acf_add_local_field_group(array(
+        'key' => 'group_665b1b9b1f2c3', // Unique key
+        'title' => 'اطلاعات تکمیلی نمایشگاه',
+        'fields' => array(
+            array(
+                'key' => 'field_exhibition_english_name',
+                'label' => 'نام انگلیسی نمایشگاه (EXHIBITION_ENGLISH_NAME)',
+                'name' => 'exhibition_english_name',
+                'type' => 'text',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_industry',
+                'label' => 'صنعت / حوزه (INDUSTRY)',
+                'name' => 'industry',
+                'type' => 'text',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_introduction',
+                'label' => 'مقدمه (INTRODUCTION)',
+                'name' => 'introduction',
+                'type' => 'textarea',
+                'instructions' => 'حداقل ۱۲۰ کلمه – اهمیت استراتژیک و زمینه',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_about_exhibition',
+                'label' => 'درباره نمایشگاه (ABOUT_EXHIBITION)',
+                'name' => 'about_exhibition',
+                'type' => 'wysiwyg',
+                'instructions' => 'پیشینه، اهداف، بخش‌های تحت پوشش',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_industry_importance',
+                'label' => 'اهمیت صنعت (INDUSTRY_IMPORTANCE)',
+                'name' => 'industry_importance',
+                'type' => 'wysiwyg',
+                'instructions' => 'تأثیر اقتصادی، فناورانه و تجاری',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_target_audience',
+                'label' => 'مخاطبان هدف (TARGET_AUDIENCE)',
+                'name' => 'target_audience',
+                'type' => 'textarea',
+                'instructions' => 'تولیدکنندگان، تأمین‌کنندگان، سرمایه‌گذاران، استارتاپ‌ها و غیره',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_event_date',
+                'label' => 'تاریخ برگزاری (EVENT_DATE)',
+                'name' => 'event_date',
+                'type' => 'text',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_location',
+                'label' => 'محل برگزاری (LOCATION)',
+                'name' => 'location',
+                'type' => 'text',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_organizer',
+                'label' => 'برگزارکننده (ORGANIZER)',
+                'name' => 'organizer',
+                'type' => 'text',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_contact_phone',
+                'label' => 'شماره تماس (CONTACT_PHONE)',
+                'name' => 'contact_phone',
+                'type' => 'text',
+            ),
+            array(
+                'key' => 'field_official_website',
+                'label' => 'وب‌سایت رسمی (OFFICIAL_WEBSITE)',
+                'name' => 'official_website',
+                'type' => 'url',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_conclusion',
+                'label' => 'نتیجه‌گیری (CONCLUSION)',
+                'name' => 'conclusion',
+                'type' => 'textarea',
+                'instructions' => 'حداقل ۸۰ کلمه - دعوت حرفه‌ای و خلاصه',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_meta_description',
+                'label' => 'توضیحات متا (META_DESCRIPTION)',
+                'name' => 'meta_description',
+                'type' => 'textarea',
+                'instructions' => 'حداکثر ۱۶۰ کاراکتر',
+                'required' => 1,
+                'maxlength' => 160,
+            ),
+            array(
+                'key' => 'field_url_slug_en',
+                'label' => 'اسلاگ URL انگلیسی (URL_SLUG_EN)',
+                'name' => 'url_slug_en',
+                'type' => 'text',
+                'instructions' => 'با حروف کوچک و جداکننده خط تیره (-)',
+                'required' => 1,
+            ),
+            array(
+                'key' => 'field_exhibition_status',
+                'label' => 'وضعیت نمایشگاه (EXHIBITION_STATUS)',
+                'name' => 'exhibition_status',
+                'type' => 'select',
+                'choices' => array(
+                    'در پیش‌رو' => 'در پیش‌رو',
+                    'در حال برگزاری' => 'در حال برگزاری',
+                    'برگزار شده' => 'برگزار شده',
+                ),
+                'allow_null' => 0,
+                'ui' => 1,
+                'ajax' => 0,
+                'return_format' => 'value',
+            ),
+            array(
+                'key' => 'field_sources',
+                'label' => 'منابع (SOURCES)',
+                'name' => 'sources',
+                'type' => 'textarea',
+                'instructions' => 'هر منبع را در یک خط جدید وارد کنید.',
+                'required' => 1,
+            ),
+        ),
+        'location' => array(
+            array(
+                array(
+                    'param' => 'post_type',
+                    'operator' => '==',
+                    'value' => 'exhibition',
+                ),
+            ),
+        ),
+        'menu_order' => 0,
+        'position' => 'acf_after_title',
+        'style' => 'default',
+        'label_placement' => 'top',
+        'instruction_placement' => 'label',
+        'hide_on_screen' => '',
+        'active' => true,
+        'description' => '',
+    ));
+}
+add_action('acf/init', 'sanatgard_register_acf_fields');
+
 // All functions are now in this file, no need to include separate files.
 
 // AJAX handler to save form fields order

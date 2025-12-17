@@ -71,15 +71,25 @@ function khabaryar_feed_url_meta_box_html( $post ) {
     $keywords = get_post_meta( $post->ID, '_khabaryar_keywords', true );
     $skip_no_image = get_post_meta( $post->ID, '_khabaryar_skip_no_image', true );
     $cron_schedule = get_post_meta( $post->ID, '_khabaryar_cron_schedule', true );
+    $feed_type = get_post_meta( $post->ID, '_khabaryar_feed_type', true ) ?: 'rss';
 
     wp_nonce_field( 'khabaryar_save_feed_meta', 'khabaryar_feed_meta_nonce' );
     ?>
     <table class="form-table">
         <tbody>
             <tr>
-                <th><label for="khabaryar_feed_url_field"><?php _e( 'Feed RSS URL', 'khabaryar' ); ?></label></th>
+                <th><label for="khabaryar_feed_type"><?php _e( 'Feed Type', 'khabaryar' ); ?></label></th>
                 <td>
-                    <input type="url" id="khabaryar_feed_url_field" name="khabaryar_feed_url_field" value="<?php echo esc_attr( $feed_url ); ?>" class="widefat" placeholder="https://example.com/feed">
+                    <select name="khabaryar_feed_type" id="khabaryar_feed_type">
+                        <option value="rss" <?php selected( $feed_type, 'rss' ); ?>><?php _e( 'RSS Feed', 'khabaryar' ); ?></option>
+                        <option value="sitemap" <?php selected( $feed_type, 'sitemap' ); ?>><?php _e( 'XML Sitemap', 'khabaryar' ); ?></option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="khabaryar_feed_url_field"><?php _e( 'Feed URL', 'khabaryar' ); ?></label></th>
+                <td>
+                    <input type="url" id="khabaryar_feed_url_field" name="khabaryar_feed_url_field" value="<?php echo esc_attr( $feed_url ); ?>" class="widefat" placeholder="https://example.com/feed or /sitemap.xml">
                 </td>
             </tr>
             <tr>
@@ -139,6 +149,20 @@ function khabaryar_feed_url_meta_box_html( $post ) {
                     </select>
                 </td>
             </tr>
+            <tr>
+                <th><label for="khabaryar_enable_translation"><?php _e( 'Translation', 'khabaryar' ); ?></label></th>
+                <td>
+                    <input type="checkbox" id="khabaryar_enable_translation" name="khabaryar_enable_translation" value="1" <?php checked( get_post_meta( $post->ID, '_khabaryar_enable_translation', true ), 1 ); ?>>
+                    <label for="khabaryar_enable_translation"><?php _e( 'Translate content to Persian before processing', 'khabaryar' ); ?></label>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="khabaryar_max_items"><?php _e( 'Limit Items', 'khabaryar' ); ?></label></th>
+                <td>
+                    <input type="number" id="khabaryar_max_items" name="khabaryar_max_items" value="<?php echo esc_attr( get_post_meta( $post->ID, '_khabaryar_max_items', true ) ?: 5 ); ?>" min="1" max="50">
+                    <p class="description"><?php _e( 'Maximum number of news items to import per fetch.', 'khabaryar' ); ?></p>
+                </td>
+            </tr>
         </tbody>
     </table>
     <?php
@@ -159,22 +183,24 @@ function khabaryar_save_feed_meta_data( $post_id ) {
     }
 
     $fields = [
-        '_khabaryar_feed_url' => 'sanitize_text_field',
-        '_khabaryar_post_category' => 'intval',
-        '_khabaryar_post_author' => 'intval',
-        '_khabaryar_keywords' => 'sanitize_text_field',
-        '_khabaryar_skip_no_image' => 'intval',
-        '_khabaryar_cron_schedule' => 'sanitize_text_field',
+        'khabaryar_feed_url_field' => '_khabaryar_feed_url',
+        'khabaryar_post_category' => '_khabaryar_post_category',
+        'khabaryar_post_author' => '_khabaryar_post_author',
+        'khabaryar_keywords' => '_khabaryar_keywords',
+        'khabaryar_cron_schedule' => '_khabaryar_cron_schedule',
+        'khabaryar_max_items' => '_khabaryar_max_items',
+        'khabaryar_feed_type' => '_khabaryar_feed_type',
     ];
 
-    foreach ( $fields as $key => $sanitize_callback ) {
-        if ( isset( $_POST[ substr( $key, 1 ) ] ) ) {
-            $value = call_user_func( $sanitize_callback, $_POST[ substr( $key, 1 ) ] );
-            update_post_meta( $post_id, $key, $value );
-        } else if ( $key === '_khabaryar_skip_no_image' ) {
-            update_post_meta( $post_id, $key, 0 );
+    foreach ( $fields as $post_key => $meta_key ) {
+        if ( isset( $_POST[ $post_key ] ) ) {
+            update_post_meta( $post_id, $meta_key, sanitize_text_field( $_POST[ $post_key ] ) );
         }
     }
+
+    // Handle checkboxes separately
+    update_post_meta( $post_id, '_khabaryar_skip_no_image', isset( $_POST['khabaryar_skip_no_image'] ) ? 1 : 0 );
+    update_post_meta( $post_id, '_khabaryar_enable_translation', isset( $_POST['khabaryar_enable_translation'] ) ? 1 : 0 );
 
     // Handle the cron schedule
     $new_schedule = sanitize_text_field( $_POST['khabaryar_cron_schedule'] );
@@ -184,3 +210,72 @@ function khabaryar_save_feed_meta_data( $post_id ) {
     }
 }
 add_action( 'save_post_khabaryar_feed', 'khabaryar_save_feed_meta_data' );
+
+/**
+ * Add custom columns to the feed source list table.
+ */
+function khabaryar_add_feed_source_columns( $columns ) {
+    $columns['next_run'] = __( 'Next Scheduled Run', 'khabaryar' );
+    return $columns;
+}
+add_filter( 'manage_khabaryar_feed_posts_columns', 'khabaryar_add_feed_source_columns' );
+
+/**
+ * Display content for custom columns.
+ */
+function khabaryar_feed_source_custom_column( $column, $post_id ) {
+    if ( 'next_run' === $column ) {
+        $timestamp = wp_next_scheduled( 'khabaryar_process_single_feed_hook', array( $post_id ) );
+        if ( $timestamp ) {
+            // Use date_i18n to respect the site's date/time format and timezone
+            echo esc_html( date_i18n( get_option( 'date_format' ) . ' @ ' . get_option( 'time_format' ), $timestamp ) );
+        } else {
+            echo '—';
+        }
+    }
+}
+add_action( 'manage_khabaryar_feed_posts_custom_column', 'khabaryar_feed_source_custom_column', 10, 2 );
+
+/**
+ * Add a "Fetch Now" link to the row actions.
+ */
+function khabaryar_add_fetch_now_link( $actions, $post ) {
+    if ( $post->post_type === 'khabaryar_feed' ) {
+        $url = add_query_arg( [
+            'action' => 'khabaryar_fetch_single',
+            'post_id' => $post->ID,
+            '_wpnonce' => wp_create_nonce( 'khabaryar_fetch_single_nonce' ),
+        ], admin_url( 'edit.php?post_type=khabaryar_feed' ) );
+        $actions['fetch_now'] = '<a href="' . esc_url( $url ) . '">' . __( 'Fetch Now', 'khabaryar' ) . '</a>';
+    }
+    return $actions;
+}
+add_filter( 'post_row_actions', 'khabaryar_add_fetch_now_link', 10, 2 );
+
+/**
+ * Handle the "Fetch Now" action.
+ */
+function khabaryar_handle_fetch_now() {
+    if ( isset( $_GET['action'], $_GET['post_id'], $_GET['_wpnonce'] ) && $_GET['action'] === 'khabaryar_fetch_single' ) {
+        if ( ! wp_verify_nonce( $_GET['_wpnonce'], 'khabaryar_fetch_single_nonce' ) ) {
+            wp_die( __( 'Security check failed.', 'khabaryar' ) );
+        }
+        $post_id = intval( $_GET['post_id'] );
+        khabaryar_process_single_feed( $post_id );
+        wp_redirect( admin_url( 'edit.php?post_type=khabaryar_feed&khabaryar_fetched=' . $post_id ) );
+        exit;
+    }
+}
+add_action( 'admin_init', 'khabaryar_handle_fetch_now' );
+
+/**
+ * Display a notice after fetching.
+ */
+function khabaryar_fetch_notice() {
+    if ( isset( $_GET['khabaryar_fetched'] ) ) {
+        $post_id = intval( $_GET['khabaryar_fetched'] );
+        $post = get_post( $post_id );
+        echo '<div class="notice notice-success is-dismissible"><p>' . sprintf( __( 'Successfully fetched feed: %s', 'khabaryar' ), esc_html( $post->post_title ) ) . '</p></div>';
+    }
+}
+add_action( 'admin_notices', 'khabaryar_fetch_notice' );

@@ -64,6 +64,22 @@ function khabaryar_register_settings() {
         'khabaryar',
         'khabaryar_ai_settings_section'
     );
+
+    add_settings_field(
+        'khabaryar_ai_provider',
+        __( 'AI Provider', 'khabaryar' ),
+        'khabaryar_ai_provider_callback',
+        'khabaryar',
+        'khabaryar_ai_settings_section'
+    );
+
+    add_settings_field(
+        'khabaryar_custom_api_url',
+        __( 'Custom API URL', 'khabaryar' ),
+        'khabaryar_custom_api_url_callback',
+        'khabaryar',
+        'khabaryar_ai_settings_section'
+    );
 }
 add_action( 'admin_init', 'khabaryar_register_settings' );
 
@@ -83,6 +99,12 @@ function khabaryar_options_sanitize( $input ) {
     }
     if ( isset( $input['ai_model'] ) ) {
         $new_input['ai_model'] = sanitize_text_field( $input['ai_model'] );
+    }
+    if ( isset( $input['ai_provider'] ) ) {
+        $new_input['ai_provider'] = sanitize_text_field( $input['ai_provider'] );
+    }
+    if ( isset( $input['custom_api_url'] ) ) {
+        $new_input['custom_api_url'] = esc_url_raw( $input['custom_api_url'] );
     }
     return $new_input;
 }
@@ -136,6 +158,35 @@ function khabaryar_ai_model_callback() {
 }
 
 /**
+ * Renders the select for the AI provider.
+ */
+function khabaryar_ai_provider_callback() {
+    $options = get_option( 'khabaryar_options' );
+    $provider = isset( $options['ai_provider'] ) ? $options['ai_provider'] : 'openai';
+    $providers = [
+        'openai' => 'OpenAI',
+        'gemini' => 'Google Gemini (Coming Soon)',
+        'custom' => 'Custom (AvalAI, etc.)'
+    ];
+    echo '<select name="khabaryar_options[ai_provider]">';
+    foreach ( $providers as $value => $label ) {
+        $disabled = ( $value === 'gemini' ) ? 'disabled' : '';
+        echo '<option value="' . esc_attr( $value ) . '" ' . selected( $provider, $value, false ) . ' ' . $disabled . '>' . esc_html( $label ) . '</option>';
+    }
+    echo '</select>';
+    echo '<p class="description">' . __( 'For "Custom", you may need to provide the full API endpoint URL.', 'khabaryar' ) . '</p>';
+}
+
+/**
+ * Renders the input for the custom API URL.
+ */
+function khabaryar_custom_api_url_callback() {
+    $options = get_option( 'khabaryar_options' );
+    $custom_api_url = isset( $options['custom_api_url'] ) ? $options['custom_api_url'] : '';
+    echo '<input type="url" name="khabaryar_options[custom_api_url]" value="' . esc_attr( $custom_api_url ) . '" class="regular-text" placeholder="https://api.example.com/v1/process"/>';
+}
+
+/**
  * Render the HTML for the settings page.
  */
 function khabaryar_settings_page_html() {
@@ -175,6 +226,10 @@ function khabaryar_settings_page_html() {
             <?php wp_nonce_field( 'khabaryar_manual_fetch', 'khabaryar_manual_fetch_nonce' ); ?>
             <?php submit_button( __( 'Fetch All Feeds Manually', 'khabaryar' ), 'primary', 'khabaryar_manual_fetch_submit' ); ?>
         </form>
+
+        <hr>
+
+        <?php khabaryar_render_log_viewer(); ?>
     </div>
     <?php
 }

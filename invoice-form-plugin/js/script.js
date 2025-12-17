@@ -1,5 +1,15 @@
 jQuery(document).ready(function($) {
 
+    // --- Debounce Function ---
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
     // --- Tab Functionality ---
     $('.tabs .tab-link').on('click', function() {
         var tabId = $(this).data('tab');
@@ -119,7 +129,9 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
+    // ⚡ Bolt: Debounce the search handler to reduce server requests and improve performance.
+    // This waits for the user to stop typing for 300ms before sending the AJAX request.
+    const debouncedProductSearch = debounce(function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
 
@@ -148,7 +160,9 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300);
+
+    $('#product-search').on('keyup', debouncedProductSearch);
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

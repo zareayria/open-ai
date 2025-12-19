@@ -1,3 +1,12 @@
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
 jQuery(document).ready(function($) {
 
     // --- Tab Functionality ---
@@ -119,7 +128,11 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
+    // By wrapping the AJAX call in a debounce function, we prevent excessive requests
+    // from being sent to the server on every keystroke. The request will only be sent
+    // after the user has stopped typing for 300ms.
+    // Expected Impact: Reduces server load and improves frontend responsiveness during product search.
+    $('#product-search').on('input', debounce(function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
 
@@ -148,7 +161,7 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300));
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

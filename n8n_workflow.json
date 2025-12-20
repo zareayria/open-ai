@@ -1,0 +1,185 @@
+{
+  "name": "مقاله خوان هوشمند",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://blog.n8n.io/rss/"
+      },
+      "id": "2d1578a1-87c3-4f90-a8c7-d0353c7a1fe2",
+      "name": "RSS Feed Read",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={{$credentials.GeminiApi.apiKey}}",
+        "method": "POST",
+        "sendBody": true,
+        "response": {
+          "responseFormat": "json"
+        },
+        "options": {
+          "body": {
+            "contents": [
+              {
+                "parts": [
+                  {
+                    "text": "={{'لطفا این مقاله را بازنویسی کن و تگ های html را حذف کن: \\n\\n' + $json['content:encoded']}}"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "id": "b3e9a5a2-8b6c-4f1d-9e7a-1b2c3d4e5f6a",
+      "name": "Gemini AI Rewriter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.stability.ai/v1/generation/stable-diffusion-v1-6/text-to-image",
+        "method": "POST",
+        "sendBody": true,
+        "response": {
+          "responseFormat": "json"
+        },
+        "options": {
+          "body": {
+            "text_prompts": [
+              {
+                "text": "={{$('RSS Feed Read').item.json.title}}"
+              }
+            ],
+            "samples": 1,
+            "steps": 30
+          }
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$credentials.StabilityAiApi.apiKey}}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "c4f5b6a3-9c7d-4e2e-8f8b-2c3d4e5f6a7b",
+      "name": "Stability AI Image Generator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "options": {
+          "inputDataFormat": "base64",
+          "binaryPropertyName": "={{$json.artifacts[0].base64}}",
+          "title": "={{$('RSS Feed Read').item.json.title}}",
+          "fileName": "={{$slug($('RSS Feed Read').item.json.title)}}.png"
+        }
+      },
+      "id": "a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6",
+      "name": "Upload to WordPress Media",
+      "type": "n8n-nodes-base.wordPress",
+      "typeVersion": 4,
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {
+        "wordPressApi": {
+          "id": "PLACEHOLDER_YOUR_WORDPRESS_CREDENTIAL_ID",
+          "name": "WordPress credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "title": "={{ $('RSS Feed Read').item.json.title }}",
+        "content": "={{ $('Gemini AI Rewriter').item.json.candidates[0].content.parts[0].text }}",
+        "status": "publish",
+        "options": {
+          "featuredImageId": "={{$json.id}}"
+        }
+      },
+      "id": "d5e6f7a4-a8b9-4d3c-9e7d-3f4e5f6a7b8c",
+      "name": "Post to WordPress",
+      "type": "n8n-nodes-base.wordPress",
+      "typeVersion": 4,
+      "position": [
+        1250,
+        300
+      ],
+      "credentials": {
+        "wordPressApi": {
+          "id": "PLACEHOLDER_YOUR_WORDPRESS_CREDENTIAL_ID",
+          "name": "WordPress credentials"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "RSS Feed Read": {
+      "main": [
+        [
+          {
+            "node": "Gemini AI Rewriter",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Gemini AI Rewriter": {
+      "main": [
+        [
+          {
+            "node": "Stability AI Image Generator",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Stability AI Image Generator": {
+      "main": [
+        [
+          {
+            "node": "Upload to WordPress Media",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Upload to WordPress Media": {
+      "main": [
+        [
+          {
+            "node": "Post to WordPress",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "1"
+}

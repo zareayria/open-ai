@@ -1,0 +1,3 @@
+## 2024-07-24 - Static Verification for WordPress JS
+**Learning:** When optimizing JavaScript within a WordPress plugin, a full end-to-end Playwright test against a live server can be brittle. I discovered that creating a static `verify.html` file, which mocks the necessary WordPress AJAX objects and includes the target script, provides a reliable and fast way to verify isolated frontend logic like debouncing.
+**Action:** For future JavaScript optimizations in this repository, I will default to creating a temporary static HTML file and a focused Playwright script for verification. This avoids environmental flakiness and speeds up the test cycle.

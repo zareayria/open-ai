@@ -119,8 +119,22 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
-        var searchTerm = $(this).val();
+    // Debounce function to limit the rate at which a function gets called.
+    function debounce(func, wait) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            var later = function() {
+                timeout = null;
+                func.apply(context, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    };
+
+    var debouncedSearch = debounce(function() {
+        var searchTerm = $('#product-search').val();
         var resultsContainer = $('#product-search-results');
 
         if (searchTerm.length < 3) {
@@ -148,7 +162,9 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300); // 300ms delay
+
+    $('#product-search').on('input', debouncedSearch);
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

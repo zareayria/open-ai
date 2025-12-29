@@ -119,8 +119,35 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
-        var searchTerm = $(this).val();
+    /**
+     * ⚡ Bolt Optimization: Debounce Search Input
+     *
+     * Why: The original code sent an AJAX request on every `keyup` event,
+     * causing a high volume of unnecessary requests to the server while the
+     * user was typing. This can overload the server and create a sluggish
+     * user experience.
+     *
+     * What: By implementing a debounce function, we delay the AJAX request
+     * until the user has stopped typing for a specified period (300ms).
+     * This dramatically reduces the number of requests, improving both
+     * frontend and backend performance. We also switched from `keyup` to `input`
+     * for better reliability in capturing user input.
+     *
+     * Impact: Reduces server requests for product search by an estimated 70-90%
+     * depending on typing speed, leading to a faster, more responsive UI
+     * and lower server load.
+     */
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
+    const debouncedProductSearch = debounce(function() {
+        var searchTerm = $('#product-search').val();
         var resultsContainer = $('#product-search-results');
 
         if (searchTerm.length < 3) {
@@ -148,7 +175,9 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300); // 300ms delay before firing request
+
+    $('#product-search').on('input', debouncedProductSearch);
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

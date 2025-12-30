@@ -1,3 +1,15 @@
+// --- Debounce Utility ---
+// Prevents a function from being called too frequently.
+// This is used on the product search to avoid sending a request on every keystroke.
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
 jQuery(document).ready(function($) {
 
     // --- Tab Functionality ---
@@ -119,8 +131,10 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
-        var searchTerm = $(this).val();
+    // The search function is debounced to prevent an AJAX call on every keystroke,
+    // improving performance by waiting for the user to pause typing.
+    const debouncedSearch = debounce(function() {
+        var searchTerm = $('#product-search').val();
         var resultsContainer = $('#product-search-results');
 
         if (searchTerm.length < 3) {
@@ -141,14 +155,25 @@ jQuery(document).ready(function($) {
                 resultsContainer.html('').show();
                 if (response.success && response.data.length > 0) {
                     $.each(response.data, function(index, product) {
-                        resultsContainer.append('<div class="search-result-item" data-title="' + product.title + '">' + product.title + '</div>');
+                        resultsContainer.append($('<div>', {
+                            'class': 'search-result-item',
+                            'data-title': product.title,
+                            'text': product.title
+                        }));
                     });
                 } else {
-                    resultsContainer.append('<div class="no-results">محصولی یافت نشد.</div>');
+                    resultsContainer.append($('<div>', {
+                        'class': 'no-results',
+                        'text': 'محصولی یافت نشد.'
+                    }));
                 }
             }
         });
-    });
+    }, 300); // 300ms delay before firing the search
+
+    // We use the 'input' event instead of 'keyup' because it handles more
+    // ways the input value can change, such as pasting text with a mouse.
+    $('#product-search').on('input', debouncedSearch);
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

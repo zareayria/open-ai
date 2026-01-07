@@ -1,3 +1,20 @@
+// --- Debounce Utility ---
+// Returns a function, that, as long as it continues to be invoked, will not
+// be triggered. The function will be called after it stops being called for
+// N milliseconds.
+function debounce(func, wait) {
+    var timeout;
+    return function() {
+        var context = this, args = arguments;
+        var later = function() {
+            timeout = null;
+            func.apply(context, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+};
+
 jQuery(document).ready(function($) {
 
     // --- Tab Functionality ---
@@ -119,8 +136,9 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
-        var searchTerm = $(this).val();
+    // Debounce the search function to prevent excessive AJAX calls
+    var debouncedSearch = debounce(function() {
+        var searchTerm = $('#product-search').val();
         var resultsContainer = $('#product-search-results');
 
         if (searchTerm.length < 3) {
@@ -148,7 +166,9 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 400); // 400ms delay
+
+    $('#product-search').on('keyup', debouncedSearch);
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

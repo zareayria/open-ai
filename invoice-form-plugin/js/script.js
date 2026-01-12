@@ -1,3 +1,20 @@
+// Debounce function to limit the rate at which a function gets called.
+function debounce(func, wait) {
+  let timeout;
+
+  return function executedFunction(...args) {
+    const context = this;
+
+    const later = function() {
+      timeout = null;
+      func.apply(context, args);
+    };
+
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
 jQuery(document).ready(function($) {
 
     // --- Tab Functionality ---
@@ -119,7 +136,9 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
+    // ⚡ Bolt Optimization: Debounce the search input to prevent an AJAX call on every keystroke.
+    // This reduces server load and improves frontend responsiveness by only searching when the user stops typing.
+    $('#product-search').on('keyup', debounce(function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
 
@@ -148,7 +167,7 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300));
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

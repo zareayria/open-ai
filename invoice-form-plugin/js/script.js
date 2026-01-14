@@ -1,5 +1,17 @@
 jQuery(document).ready(function($) {
 
+    // --- Debounce Function ---
+    // Limits the rate at which a function can fire.
+    // Used to prevent excessive AJAX calls on the product search input.
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
     // --- Tab Functionality ---
     $('.tabs .tab-link').on('click', function() {
         var tabId = $(this).data('tab');
@@ -119,7 +131,9 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
+    // The debounce function is applied here to prevent an AJAX call on every keystroke.
+    // This improves performance by waiting 300ms after the user stops typing before sending the request.
+    $('#product-search').on('keyup', debounce(function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
 
@@ -148,7 +162,7 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300));
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

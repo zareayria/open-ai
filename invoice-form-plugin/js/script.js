@@ -119,35 +119,43 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
+    var debounceTimeout;
     $('#product-search').on('keyup', function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
+
+        // Clear the previous timeout
+        clearTimeout(debounceTimeout);
 
         if (searchTerm.length < 3) {
             resultsContainer.hide();
             return;
         }
 
-        $.ajax({
-            url: invoice_form_ajax.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'search_products',
-                nonce: invoice_form_ajax.nonce,
-                search_term: searchTerm
-            },
-            dataType: 'json',
-            success: function(response) {
-                resultsContainer.html('').show();
-                if (response.success && response.data.length > 0) {
-                    $.each(response.data, function(index, product) {
-                        resultsContainer.append('<div class="search-result-item" data-title="' + product.title + '">' + product.title + '</div>');
-                    });
-                } else {
-                    resultsContainer.append('<div class="no-results">محصولی یافت نشد.</div>');
+        // --- Debounce AJAX request to improve performance ---
+        // Wait for 300ms after the user stops typing before sending the request
+        debounceTimeout = setTimeout(function() {
+            $.ajax({
+                url: invoice_form_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'search_products',
+                    nonce: invoice_form_ajax.nonce,
+                    search_term: searchTerm
+                },
+                dataType: 'json',
+                success: function(response) {
+                    resultsContainer.html('').show();
+                    if (response.success && response.data.length > 0) {
+                        $.each(response.data, function(index, product) {
+                            resultsContainer.append('<div class="search-result-item" data-title="' + product.title + '">' + product.title + '</div>');
+                        });
+                    } else {
+                        resultsContainer.append('<div class="no-results">محصولی یافت نشد.</div>');
+                    }
                 }
-            }
-        });
+            });
+        }, 300);
     });
 
     // Handle click on a search result

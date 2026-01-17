@@ -1,3 +1,22 @@
+// --- Debounce Utility ---
+// Delays the execution of a function until after a certain amount of time has passed
+// without that function being called. This is used to prevent excessive AJAX calls
+// on the product search input.
+function debounce(func, wait, immediate) {
+	var timeout;
+	return function() {
+		var context = this, args = arguments;
+		var later = function() {
+			timeout = null;
+			if (!immediate) func.apply(context, args);
+		};
+		var callNow = immediate && !timeout;
+		clearTimeout(timeout);
+		timeout = setTimeout(later, wait);
+		if (callNow) func.apply(context, args);
+	};
+}
+
 jQuery(document).ready(function($) {
 
     // --- Tab Functionality ---
@@ -119,7 +138,10 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
+    // ⚡ Bolt: Debounce AJAX call to prevent excessive requests while typing.
+    // This improves performance by waiting 300ms after the user stops typing
+    // before sending the search request.
+    $('#product-search').on('keyup', debounce(function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
 
@@ -148,7 +170,7 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300));
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

@@ -1,3 +1,12 @@
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
 jQuery(document).ready(function($) {
 
     // --- Tab Functionality ---
@@ -119,8 +128,9 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
-        var searchTerm = $(this).val();
+    // Debounced search to prevent excessive AJAX calls on every keystroke.
+    var debouncedSearch = debounce(function() {
+        var searchTerm = $('#product-search').val(); // Directly select the input
         var resultsContainer = $('#product-search-results');
 
         if (searchTerm.length < 3) {
@@ -148,7 +158,9 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300); // 300ms delay after user stops typing
+
+    $('#product-search').on('keyup', debouncedSearch);
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

@@ -1,5 +1,18 @@
 jQuery(document).ready(function($) {
 
+    // --- Debounce Function for Performance ---
+    // Prevents an event from firing too frequently.
+    // In this case, it's used to delay the product search AJAX call
+    // until the user has stopped typing for a brief moment.
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
     // --- Tab Functionality ---
     $('.tabs .tab-link').on('click', function() {
         var tabId = $(this).data('tab');
@@ -119,7 +132,9 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
+    // The keyup event is debounced to prevent sending an AJAX request on every keystroke,
+    // which significantly improves performance by reducing server load.
+    $('#product-search').on('keyup', debounce(function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
 
@@ -148,7 +163,7 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300)); // 300ms delay before sending the request
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

@@ -1,5 +1,24 @@
 jQuery(document).ready(function($) {
 
+    /**
+     * Generic debounce function to limit the rate at which a function can fire.
+     * Useful for events that fire rapidly, like 'input' or 'resize'.
+     */
+    function debounce(func, wait, immediate) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    };
+
     // --- Tab Functionality ---
     $('.tabs .tab-link').on('click', function() {
         var tabId = $(this).data('tab');
@@ -119,7 +138,11 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
+    /**
+     * Use 'input' event instead of 'keyup' for better coverage (e.g. paste)
+     * and wrap in debounce to reduce server load by limiting AJAX requests.
+     */
+    $('#product-search').on('input', debounce(function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
 
@@ -148,7 +171,7 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-    });
+    }, 300));
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

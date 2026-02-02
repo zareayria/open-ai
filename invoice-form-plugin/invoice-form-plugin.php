@@ -167,6 +167,7 @@ function search_products_callback() {
         'post_type'      => 'product',
         'posts_per_page' => 10,
         's'              => $search_term,
+        'no_found_rows'  => true, // Performance optimization: skip counting total rows as pagination is not used.
     );
     $products = new WP_Query( $args );
 

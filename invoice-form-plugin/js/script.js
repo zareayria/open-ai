@@ -1,5 +1,26 @@
 jQuery(document).ready(function($) {
 
+    /**
+     * Debounce utility function to limit the rate at which a function can fire.
+     * @param {Function} func - The function to debounce.
+     * @param {number} wait - The delay in milliseconds.
+     * @param {boolean} immediate - If true, trigger the function on the leading edge instead of the trailing.
+     */
+    function debounce(func, wait, immediate) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    }
+
     // --- Tab Functionality ---
     $('.tabs .tab-link').on('click', function() {
         var tabId = $(this).data('tab');
@@ -119,16 +140,23 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
+    var productSearchXHR = null; // Store XHR object to allow aborting
+    $('#product-search').on('input', debounce(function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
+
+        // Abort any pending requests to prevent race conditions and reduce server load
+        if (productSearchXHR) {
+            productSearchXHR.abort();
+            productSearchXHR = null;
+        }
 
         if (searchTerm.length < 3) {
             resultsContainer.hide();
             return;
         }
 
-        $.ajax({
+        productSearchXHR = $.ajax({
             url: invoice_form_ajax.ajax_url,
             type: 'POST',
             data: {
@@ -146,9 +174,12 @@ jQuery(document).ready(function($) {
                 } else {
                     resultsContainer.append('<div class="no-results">محصولی یافت نشد.</div>');
                 }
+            },
+            complete: function() {
+                productSearchXHR = null;
             }
         });
-    });
+    }, 300));
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

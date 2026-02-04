@@ -1,5 +1,23 @@
 jQuery(document).ready(function($) {
 
+    // Debounce utility function to limit high-frequency events
+    function debounce(func, wait, immediate) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    }
+
+    var productSearchRequest = null;
+
     // --- Tab Functionality ---
     $('.tabs .tab-link').on('click', function() {
         var tabId = $(this).data('tab');
@@ -119,7 +137,8 @@ jQuery(document).ready(function($) {
     });
 
     // --- WooCommerce Product Search ---
-    $('#product-search').on('keyup', function() {
+    // Use debounce to limit AJAX calls and abort previous pending requests
+    $('#product-search').on('input', debounce(function() {
         var searchTerm = $(this).val();
         var resultsContainer = $('#product-search-results');
 
@@ -128,7 +147,12 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        $.ajax({
+        // Abort previous request if it's still pending to prevent race conditions
+        if (productSearchRequest) {
+            productSearchRequest.abort();
+        }
+
+        productSearchRequest = $.ajax({
             url: invoice_form_ajax.ajax_url,
             type: 'POST',
             data: {
@@ -146,9 +170,12 @@ jQuery(document).ready(function($) {
                 } else {
                     resultsContainer.append('<div class="no-results">محصولی یافت نشد.</div>');
                 }
+            },
+            complete: function() {
+                productSearchRequest = null;
             }
         });
-    });
+    }, 300));
 
     // Handle click on a search result
     $(document).on('click', '.search-result-item', function() {

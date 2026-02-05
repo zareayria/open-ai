@@ -164,9 +164,12 @@ function search_products_callback() {
 
     $search_term = sanitize_text_field( $_POST['search_term'] );
     $args = array(
-        'post_type'      => 'product',
-        'posts_per_page' => 10,
-        's'              => $search_term,
+        'post_type'               => 'product',
+        'posts_per_page'          => 10,
+        's'                       => $search_term,
+        'no_found_rows'           => true, // Optimization: skip total row count
+        'update_post_meta_cache'  => false, // Optimization: skip meta cache update
+        'update_post_term_cache'  => false, // Optimization: skip term cache update
     );
     $products = new WP_Query( $args );
 

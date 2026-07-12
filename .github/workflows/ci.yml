@@ -1,0 +1,22 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  build-test-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore Enterprise.Sso.sln
+      - run: dotnet build Enterprise.Sso.sln --no-restore -warnaserror
+      - run: dotnet test Enterprise.Sso.sln --no-build --collect:"XPlat Code Coverage"
+      - run: dotnet list Enterprise.Sso.sln package --vulnerable --include-transitive
+      - uses: anchore/sbom-action@v0
+        with:
+          path: .

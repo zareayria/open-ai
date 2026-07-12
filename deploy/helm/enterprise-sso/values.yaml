@@ -1,0 +1,10 @@
+replicaCount: 2
+image:
+  repository: enterprise-sso/identityserver
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  port: 80
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { cpu: "1", memory: 1Gi }

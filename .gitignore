@@ -1,0 +1,14 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+.env
+*.pfx
+*.p12
+*.key
+*.pem
+TestResults/
+playwright-report/
+k6-results/
